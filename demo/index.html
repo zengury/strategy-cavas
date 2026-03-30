@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategic Canvas — 3D Visualization</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0a0a0f;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  #app {
+    display: flex;
+    height: 100vh;
+  }
+
+  /* ── 左侧对话面板 ──────────────────────────── */
+  .sidebar {
+    width: 380px;
+    min-width: 380px;
+    background: #111118;
+    border-right: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+
+  .sidebar-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #222;
+  }
+
+  .sidebar-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .sidebar-header .subtitle {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 12px;
+    padding: 10px 20px;
+    border-bottom: 1px solid #222;
+    font-size: 11px;
+    color: #888;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ── 对话区域 ──────────────────────────────── */
+  .conversation {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+
+  .conversation::-webkit-scrollbar { width: 4px; }
+  .conversation::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .turn {
+    margin-bottom: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .turn-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .turn-label.user { color: #4A90D9; }
+  .turn-label.coach { color: #50C878; }
+
+  .turn-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ccc;
+  }
+
+  .turn-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #333, transparent);
+    margin: 16px 0;
+  }
+
+  /* ── 图例 ──────────────────────────────────── */
+  .legend {
+    padding: 12px 20px;
+    border-top: 1px solid #222;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .legend-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #999;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+
+  .legend-item:hover {
+    background: #1a1a24;
+    color: #fff;
+  }
+
+  .legend-item.dimmed {
+    opacity: 0.3;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── 3D 视图区域 ───────────────────────────── */
+  .canvas-3d {
+    flex: 1;
+    position: relative;
+  }
+
+  #graph-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── 节点详情面板 ──────────────────────────── */
+  .node-detail {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 300px;
+    background: rgba(17, 17, 24, 0.95);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    display: none;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+  }
+
+  .node-detail.visible {
+    display: block;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .node-detail-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    cursor: pointer;
+    color: #666;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .node-detail-close:hover { color: #fff; }
+
+  .node-detail-type {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .node-detail-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .node-detail-content {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #aaa;
+    margin-bottom: 10px;
+  }
+
+  .node-detail-meta {
+    font-size: 11px;
+    color: #666;
+  }
+
+  .node-detail-meta span {
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  /* ── 控制栏 ──────────────────────────────── */
+  .controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .controls button {
+    padding: 6px 14px;
+    background: rgba(17, 17, 24, 0.9);
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    backdrop-filter: blur(10px);
+  }
+
+  .controls button:hover {
+    background: rgba(30, 30, 44, 0.95);
+    border-color: #555;
+    color: #fff;
+  }
+
+  .controls button.active {
+    border-color: #4A90D9;
+    color: #4A90D9;
+  }
+
+  /* ── 回放进度条 ──────────────────────────── */
+  .playback {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 20;
+    background: rgba(17, 17, 24, 0.9);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 8px 16px;
+    backdrop-filter: blur(10px);
+  }
+
+  .playback-label {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+  }
+
+  .playback input[type="range"] {
+    width: 200px;
+    accent-color: #4A90D9;
+  }
+
+  .playback-turn {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4A90D9;
+    min-width: 60px;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>STRATEGIC CANVAS</h1>
+      <div class="subtitle">3D Strategy Neural Network</div>
+    </div>
+    <div class="stats-bar" id="stats-bar"></div>
+    <div class="conversation" id="conversation"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="canvas-3d">
+    <div id="graph-container"></div>
+
+    <div class="node-detail" id="node-detail">
+      <span class="node-detail-close" onclick="hideDetail()">&times;</span>
+      <div class="node-detail-type" id="detail-type"></div>
+      <div class="node-detail-label" id="detail-label"></div>
+      <div class="node-detail-content" id="detail-content"></div>
+      <div class="node-detail-meta" id="detail-meta"></div>
+    </div>
+
+    <div class="playback">
+      <span class="playback-label">Turn</span>
+      <input type="range" id="turn-slider" min="1" max="6" value="6" step="1">
+      <span class="playback-turn" id="turn-display">Turn 6/6</span>
+    </div>
+
+    <div class="controls">
+      <button id="btn-rotate" class="active" onclick="toggleRotate()">Auto Rotate</button>
+      <button onclick="resetCamera()">Reset View</button>
+      <button onclick="exportImage()">Export PNG</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3D Force Graph (UMD build from CDN) -->
+<script src="https://unpkg.com/3d-force-graph@1"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Data Loading & State
+// ═══════════════════════════════════════════════════════════════
+
+let DATA = null;
+let graphInstance = null;
+let currentTurn = 6;
+let autoRotate = true;
+let highlightedTypes = new Set();
+let allNodeTypes = new Set();
+
+const NODE_TYPE_LABELS = {
+  goal: "Goal", position: "Position", option: "Option",
+  resource: "Resource", constraint: "Constraint", tension: "Tension",
+  assumption: "Assumption", risk: "Risk", signal: "Signal",
+  stakeholder: "Stakeholder", mechanism: "Mechanism", evidence: "Evidence",
+  pattern: "Pattern", action: "Action",
+};
+
+// Load data
+fetch("graph_data.json")
+  .then(r => r.json())
+  .then(data => {
+    DATA = data;
+    init();
+  });
+
+function init() {
+  renderStats();
+  renderConversation();
+  renderLegend();
+  initGraph();
+  setupSlider();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3D Graph
+// ═══════════════════════════════════════════════════════════════
+
+function getFilteredData(maxTurn) {
+  const turnPrefix = (t) => `turn_${t}`;
+  const validTurns = new Set();
+  for (let i = 1; i <= maxTurn; i++) validTurns.add(turnPrefix(i));
+
+  const nodes = DATA.graph.nodes.filter(n =>
+    validTurns.has(n.source_turn_id)
+  );
+  const nodeIds = new Set(nodes.map(n => n.id));
+  const links = DATA.graph.links.filter(e =>
+    nodeIds.has(e.source) || nodeIds.has(e.source?.id)
+  ).filter(e =>
+    nodeIds.has(e.target) || nodeIds.has(e.target?.id)
+  );
+
+  return { nodes: JSON.parse(JSON.stringify(nodes)), links: JSON.parse(JSON.stringify(links)) };
+}
+
+function initGraph() {
+  const container = document.getElementById("graph-container");
+  const data = getFilteredData(currentTurn);
+
+  graphInstance = ForceGraph3D()(container)
+    .graphData(data)
+    .backgroundColor("#0a0a0f")
+    .width(container.clientWidth)
+    .height(container.clientHeight)
+
+    // Node appearance
+    .nodeVal(n => {
+      const linkCount = data.links.filter(
+        l => (l.source === n.id || l.source?.id === n.id ||
+              l.target === n.id || l.target?.id === n.id)
+      ).length;
+      return Math.max(2, linkCount * 1.5);
+    })
+    .nodeColor(n => {
+      if (highlightedTypes.size > 0 && !highlightedTypes.has(n.node_type)) {
+        return "#222";
+      }
+      return n.color;
+    })
+    .nodeOpacity(0.9)
+    .nodeLabel(n => `<div style="background:rgba(0,0,0,0.8);padding:4px 8px;border-radius:4px;font-size:12px;color:#fff;border:1px solid ${n.color}">
+      <div style="font-size:9px;color:${n.color};text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">${n.node_type}</div>
+      <div>${n.label}</div>
+      <div style="font-size:10px;color:#888;margin-top:2px">confidence: ${Math.round(n.confidence * 100)}%</div>
+    </div>`)
+
+    // Edge appearance
+    .linkColor(l => {
+      if (highlightedTypes.size > 0) {
+        const src = typeof l.source === "object" ? l.source : data.nodes.find(n => n.id === l.source);
+        const tgt = typeof l.target === "object" ? l.target : data.nodes.find(n => n.id === l.target);
+        if (src && tgt && !highlightedTypes.has(src.node_type) && !highlightedTypes.has(tgt.node_type)) {
+          return "rgba(50,50,50,0.1)";
+        }
+      }
+      return l.color || "#444";
+    })
+    .linkWidth(l => l.strength * 2)
+    .linkOpacity(0.6)
+    .linkDirectionalArrowLength(4)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalParticles(l => l.strength > 0.7 ? 2 : 0)
+    .linkDirectionalParticleWidth(1.5)
+    .linkDirectionalParticleColor(l => l.color)
+
+    // Node glow (use Three.js Sprite for glow effect)
+    .nodeThreeObject(n => {
+      const group = new THREE.Group();
+
+      // Sphere
+      const linkCount = data.links.filter(
+        l => (l.source === n.id || l.source?.id === n.id ||
+              l.target === n.id || l.target?.id === n.id)
+      ).length;
+      const size = Math.max(3, linkCount * 1.2);
+      const color = (highlightedTypes.size > 0 && !highlightedTypes.has(n.node_type))
+        ? "#222" : n.color;
+
+      const geometry = new THREE.SphereGeometry(size, 16, 16);
+      const material = new THREE.MeshPhongMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: n.confidence * 0.6,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const sphere = new THREE.Mesh(geometry, material);
+      group.add(sphere);
+
+      // Glow sprite
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: createGlowTexture(),
+        color: color,
+        transparent: true,
+        opacity: n.confidence * 0.3,
+        blending: THREE.AdditiveBlending,
+      });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(size * 4, size * 4, 1);
+      group.add(sprite);
+
+      // Label
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 256;
+      canvas.height = 64;
+      ctx.fillStyle = "rgba(0,0,0,0)";
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.font = "bold 20px -apple-system, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.fillText(truncate(n.label, 18), 128, 36);
+      const texture = new THREE.CanvasTexture(canvas);
+      const labelMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const labelSprite = new THREE.Sprite(labelMaterial);
+      labelSprite.scale.set(30, 7.5, 1);
+      labelSprite.position.set(0, size + 6, 0);
+      group.add(labelSprite);
+
+      return group;
+    })
+
+    // Interaction
+    .onNodeClick(n => showDetail(n))
+
+    // Initial camera
+    .cameraPosition({ x: 300, y: 200, z: 400 })
+
+    // Force config — use semantic positions as initial but allow force to settle
+    .d3Force("charge").strength(-120);
+
+  graphInstance.d3Force("link").distance(l => (1 - l.strength) * 80 + 30);
+
+  // Enable auto-rotate
+  if (autoRotate) {
+    graphInstance.controls().autoRotate = true;
+    graphInstance.controls().autoRotateSpeed = 0.5;
+  }
+
+  // Handle resize
+  window.addEventListener("resize", () => {
+    graphInstance.width(container.clientWidth).height(container.clientHeight);
+  });
+}
+
+// Glow texture (cached)
+let _glowTexture = null;
+function createGlowTexture() {
+  if (_glowTexture) return _glowTexture;
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.2, "rgba(255,255,255,0.5)");
+  gradient.addColorStop(0.5, "rgba(255,255,255,0.1)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  _glowTexture = new THREE.CanvasTexture(canvas);
+  return _glowTexture;
+}
+
+function truncate(s, max) {
+  return s.length > max ? s.slice(0, max) + "..." : s;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Turn Playback
+// ═══════════════════════════════════════════════════════════════
+
+function setupSlider() {
+  const slider = document.getElementById("turn-slider");
+  slider.addEventListener("input", e => {
+    currentTurn = parseInt(e.target.value);
+    document.getElementById("turn-display").textContent = `Turn ${currentTurn}/6`;
+    updateGraph();
+    updateConversationHighlight();
+  });
+}
+
+function updateGraph() {
+  const data = getFilteredData(currentTurn);
+  graphInstance.graphData(data);
+}
+
+function updateConversationHighlight() {
+  document.querySelectorAll(".turn").forEach(el => {
+    const turn = parseInt(el.dataset.turn);
+    el.style.opacity = turn <= currentTurn ? "1" : "0.2";
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Sidebar Rendering
+// ═══════════════════════════════════════════════════════════════
+
+function renderStats() {
+  const s = DATA.stats;
+  document.getElementById("stats-bar").innerHTML = `
+    <div class="stat"><span class="stat-dot" style="background:#4A90D9"></span>${s.total_nodes} nodes</div>
+    <div class="stat"><span class="stat-dot" style="background:#50C878"></span>${s.total_edges} edges</div>
+    <div class="stat"><span class="stat-dot" style="background:#F39C12"></span>${Object.keys(s.node_types).length} types</div>
+  `;
+}
+
+function renderConversation() {
+  const container = document.getElementById("conversation");
+  container.innerHTML = DATA.conversation.map(c => `
+    <div class="turn" data-turn="${c.turn}">
+      <div class="turn-label user">Turn ${c.turn} — User</div>
+      <div class="turn-text">${c.user}</div>
+      <div style="height:8px"></div>
+      <div class="turn-label coach">Coach</div>
+      <div class="turn-text">${c.coach}</div>
+    </div>
+    <div class="turn-divider"></div>
+  `).join("");
+}
+
+function renderLegend() {
+  const container = document.getElementById("legend");
+  const colors = {};
+  DATA.graph.nodes.forEach(n => {
+    colors[n.node_type] = n.color;
+    allNodeTypes.add(n.node_type);
+  });
+
+  container.innerHTML = `
+    <div class="legend-title">Node Types (click to filter)</div>
+    <div class="legend-grid">
+      ${Object.entries(colors).map(([type, color]) => `
+        <div class="legend-item" data-type="${type}" onclick="toggleType('${type}')">
+          <span class="legend-dot" style="background:${color}"></span>
+          ${NODE_TYPE_LABELS[type] || type}
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function toggleType(type) {
+  if (highlightedTypes.has(type)) {
+    highlightedTypes.delete(type);
+  } else {
+    highlightedTypes.add(type);
+  }
+
+  // Update legend UI
+  document.querySelectorAll(".legend-item").forEach(el => {
+    if (highlightedTypes.size === 0) {
+      el.classList.remove("dimmed");
+    } else {
+      el.classList.toggle("dimmed", !highlightedTypes.has(el.dataset.type));
+    }
+  });
+
+  // Re-render graph to update colors
+  updateGraph();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Node Detail Panel
+// ═══════════════════════════════════════════════════════════════
+
+function showDetail(node) {
+  const panel = document.getElementById("node-detail");
+  const typeEl = document.getElementById("detail-type");
+  const labelEl = document.getElementById("detail-label");
+  const contentEl = document.getElementById("detail-content");
+  const metaEl = document.getElementById("detail-meta");
+
+  typeEl.textContent = node.node_type.toUpperCase();
+  typeEl.style.background = node.color + "22";
+  typeEl.style.color = node.color;
+  labelEl.textContent = node.label;
+  contentEl.textContent = node.content;
+  metaEl.innerHTML = `
+    <span>Confidence: ${Math.round(node.confidence * 100)}%</span>
+    <span>Source: ${node.source_turn_id}</span>
+    ${node.source_skill ? `<span>Skill: ${node.source_skill}</span>` : ""}
+  `;
+
+  panel.classList.add("visible");
+}
+
+function hideDetail() {
+  document.getElementById("node-detail").classList.remove("visible");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Controls
+// ═══════════════════════════════════════════════════════════════
+
+function toggleRotate() {
+  autoRotate = !autoRotate;
+  graphInstance.controls().autoRotate = autoRotate;
+  document.getElementById("btn-rotate").classList.toggle("active", autoRotate);
+}
+
+function resetCamera() {
+  graphInstance.cameraPosition({ x: 300, y: 200, z: 400 }, { x: 0, y: 0, z: 0 }, 1000);
+}
+
+function exportImage() {
+  const renderer = graphInstance.renderer();
+  const canvas = renderer.domElement;
+  const link = document.createElement("a");
+  link.download = `strategic-canvas-turn-${currentTurn}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+</script>
+
+</body>
+</html>

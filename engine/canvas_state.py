@@ -1,22 +1,30 @@
 """
-CanvasStateManager — 画布状态管理器。
+CanvasStateManager v2 — 自由图状态管理器。
 
-职责（PRD FR-40~45）：
-  - 将每轮 LLM 输出映射为画布 JSON
-  - 增量 diff 更新（新增/修改/失效）
-  - 节点可回溯到对话轮次与输入证据
-  - 节点锁定（用户确认后不可被自动覆盖）
-  - 导出 JSON
+职责：
+  - 管理 CanvasGraph（节点 + 边的自由图）
+  - 3D 空间定位：基于节点类型的语义偏置 + 力导向微调
+  - 增量 diff 更新
+  - 节点锁定
+  - 导出 JSON（兼容 react-force-graph-3d）
 """
 
 import json
 import logging
+import random
 from pathlib import Path
 from datetime import datetime
 
-from models.schema import CanvasState, CanvasNode, CanvasDiff, CANVAS_ZONES
+from models.schema import (
+    CanvasGraph, GraphNode, GraphEdge, GraphDiff,
+    NodeType, EdgeType, NODE_SPATIAL_BIAS,
+)
 
 log = logging.getLogger("canvas_state")
+
+# 3D 空间范围
+SPACE_SCALE = 200  # 节点分布范围 [-SCALE, SCALE]
+JITTER = 40        # 同类型节点的随机偏移量
 
 
 class CanvasStateManager:
@@ -24,144 +32,108 @@ class CanvasStateManager:
     def __init__(self, store_path: str = "store"):
         self.store_dir = Path(store_path) / "cases"
         self.store_dir.mkdir(parents=True, exist_ok=True)
-        self._canvas = CanvasState()
+        self._graph = CanvasGraph()
 
     @property
-    def canvas(self) -> CanvasState:
-        return self._canvas
+    def graph(self) -> CanvasGraph:
+        return self._graph
 
-    def apply_diff(self, diff: CanvasDiff) -> CanvasState:
-        self._canvas.apply_diff(diff)
-        log.info(f"Canvas updated: v{self._canvas.version} "
-                 f"(+{len(diff.added)} ~{len(diff.modified)} -{len(diff.invalidated)})")
-        return self._canvas
+    # ── 核心操作 ─────────────────────────────────────────────
 
-    def parse_llm_canvas_output(self, output: dict, turn_id: str) -> CanvasDiff:
-        """
-        LLM 输出格式约定：
-        {
-          "canvas_updates": {
-            "north_star": [{"content": "...", "confidence": 0.9}],
-            "options": [
-              {"content": "选项A", "confidence": 0.8},
-              {"action": "invalidate", "node_id": "abc123"}
-            ]
-          }
-        }
-        """
-        diff = CanvasDiff()
-        updates = output.get("canvas_updates", {})
+    def add_node(self, node: GraphNode) -> GraphNode:
+        """添加节点并计算 3D 坐标。"""
+        self._assign_position(node)
+        self._graph.nodes[node.node_id] = node
+        self._graph.version += 1
+        self._graph.updated_at = datetime.now().isoformat()
+        log.info(f"Node added: [{node.node_type.value}] {node.label}")
+        return node
 
-        for zone, items in updates.items():
-            if zone not in CANVAS_ZONES:
-                continue
+    def add_edge(self, edge: GraphEdge) -> GraphEdge:
+        """添加边（验证两端节点存在）。"""
+        if edge.source_id not in self._graph.nodes:
+            log.warning(f"Edge source {edge.source_id} not found")
+            return edge
+        if edge.target_id not in self._graph.nodes:
+            log.warning(f"Edge target {edge.target_id} not found")
+            return edge
+        self._graph.edges[edge.edge_id] = edge
+        log.info(f"Edge added: {edge.source_id} --{edge.edge_type.value}--> {edge.target_id}")
+        return edge
 
-            for item in items:
-                action = item.get("action", "add")
+    def apply_diff(self, diff: GraphDiff) -> CanvasGraph:
+        """应用增量更新。"""
+        for node in diff.added_nodes:
+            self.add_node(node)
+        for edge in diff.added_edges:
+            self.add_edge(edge)
+        for mod in diff.modified_nodes:
+            node = self._graph.nodes.get(mod["node_id"])
+            if node and not node.locked:
+                setattr(node, mod["field"], mod["new"])
+                node.updated_at = datetime.now().isoformat()
+        for node_id in diff.invalidated_node_ids:
+            node = self._graph.nodes.get(node_id)
+            if node and not node.locked:
+                node.status = "invalidated"
 
-                if action == "add":
-                    node = CanvasNode(
-                        zone=zone,
-                        content=item.get("content", ""),
-                        source_turn_id=turn_id,
-                        source_evidence=item.get("evidence", ""),
-                        confidence=item.get("confidence", 0.8),
-                        risk_level=item.get("risk_level", "normal"),
-                    )
-                    diff.added.append(node)
-
-                elif action == "modify" and "node_id" in item:
-                    for field in ("content", "confidence", "risk_level"):
-                        if field in item:
-                            diff.modified.append({
-                                "node_id": item["node_id"],
-                                "field": field,
-                                "old": None,
-                                "new": item[field],
-                            })
-
-                elif action == "invalidate" and "node_id" in item:
-                    diff.invalidated.append(item["node_id"])
-
-        return diff
+        self._graph.version += 1
+        self._graph.updated_at = datetime.now().isoformat()
+        log.info(f"Graph updated: v{self._graph.version} "
+                 f"(+{len(diff.added_nodes)} nodes, +{len(diff.added_edges)} edges)")
+        return self._graph
 
     def lock_node(self, node_id: str) -> bool:
-        node = self._find_node(node_id)
+        node = self._graph.nodes.get(node_id)
         if node:
             node.locked = True
             return True
         return False
 
     def unlock_node(self, node_id: str) -> bool:
-        node = self._find_node(node_id)
+        node = self._graph.nodes.get(node_id)
         if node:
             node.locked = False
             return True
         return False
 
-    def _find_node(self, node_id: str):
-        for zone_nodes in self._canvas.nodes.values():
-            for node in zone_nodes:
-                if node.node_id == node_id:
-                    return node
-        return None
+    # ── 3D 空间定位 ──────────────────────────────────────────
+
+    def _assign_position(self, node: GraphNode):
+        """基于节点类型的语义偏置分配 3D 坐标。"""
+        bias = NODE_SPATIAL_BIAS.get(node.node_type, (0, 0, 0))
+        node.x = bias[0] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
+        node.y = bias[1] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
+        node.z = bias[2] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
+
+    # ── 查询 ─────────────────────────────────────────────────
+
+    def get_nodes_by_type(self, node_type: NodeType) -> list[GraphNode]:
+        return [n for n in self._graph.active_nodes() if n.node_type == node_type]
+
+    def get_connected_nodes(self, node_id: str) -> list[GraphNode]:
+        connected_ids = set()
+        for e in self._graph.active_edges():
+            if e.source_id == node_id:
+                connected_ids.add(e.target_id)
+            elif e.target_id == node_id:
+                connected_ids.add(e.source_id)
+        return [self._graph.nodes[nid] for nid in connected_ids
+                if nid in self._graph.nodes]
+
+    # ── 导出/持久化 ──────────────────────────────────────────
+
+    def export_vis_json(self) -> str:
+        """导出 react-force-graph-3d 兼容的 JSON。"""
+        return json.dumps(self._graph.to_vis_data(), ensure_ascii=False, indent=2)
 
     def export_json(self) -> str:
-        return json.dumps(self._to_dict(), ensure_ascii=False, indent=2)
+        return self.export_vis_json()
 
     def save(self, case_id: str):
-        path = self.store_dir / f"{case_id}_canvas.json"
+        path = self.store_dir / f"{case_id}_graph.json"
         with open(path, "w") as f:
-            json.dump(self._to_dict(), f, ensure_ascii=False, indent=2)
-
-    def load(self, case_id: str) -> bool:
-        path = self.store_dir / f"{case_id}_canvas.json"
-        if not path.exists():
-            return False
-        with open(path) as f:
-            data = json.load(f)
-        self._from_dict(data)
-        return True
+            json.dump(self._graph.to_vis_data(), f, ensure_ascii=False, indent=2)
 
     def reset(self):
-        self._canvas = CanvasState()
-
-    def _to_dict(self) -> dict:
-        result = {
-            "case_id": self._canvas.case_id,
-            "version": self._canvas.version,
-            "updated_at": self._canvas.updated_at,
-            "nodes": {},
-            "edges": self._canvas.edges,
-        }
-        for zone, nodes in self._canvas.nodes.items():
-            result["nodes"][zone] = [
-                {
-                    "node_id": n.node_id,
-                    "content": n.content,
-                    "source_turn_id": n.source_turn_id,
-                    "source_evidence": n.source_evidence,
-                    "confidence": n.confidence,
-                    "locked": n.locked,
-                    "status": n.status,
-                    "risk_level": n.risk_level,
-                    "created_at": n.created_at,
-                    "updated_at": n.updated_at,
-                }
-                for n in nodes
-            ]
-        return result
-
-    def _from_dict(self, data: dict):
-        self._canvas = CanvasState(
-            case_id=data.get("case_id", ""),
-            version=data.get("version", 0),
-            updated_at=data.get("updated_at", ""),
-            edges=data.get("edges", []),
-        )
-        for zone in CANVAS_ZONES:
-            zone_data = data.get("nodes", {}).get(zone, [])
-            self._canvas.nodes[zone] = [
-                CanvasNode(**{k: v for k, v in nd.items() if k != "zone"}, zone=zone)
-                for nd in zone_data
-            ]
+        self._graph = CanvasGraph()
