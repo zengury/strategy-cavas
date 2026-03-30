@@ -115,6 +115,68 @@
     margin: 16px 0;
   }
 
+  /* ── 对话输入框 ────────────────────────────── */
+  .chat-input-area {
+    padding: 12px 16px;
+    border-top: 1px solid #222;
+    background: #0e0e16;
+  }
+
+  .chat-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .chat-input-wrapper textarea {
+    flex: 1;
+    background: #1a1a26;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 8px 12px;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+  }
+
+  .chat-input-wrapper textarea:focus {
+    border-color: #4A90D9;
+  }
+
+  .chat-input-wrapper textarea::placeholder {
+    color: #555;
+  }
+
+  #chat-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #4A90D9;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  #chat-send:hover {
+    background: #3a7bc8;
+  }
+
+  .chat-hint {
+    font-size: 10px;
+    color: #555;
+    margin-top: 6px;
+    text-align: center;
+  }
+
   /* ── 图例 ──────────────────────────────────── */
   .legend {
     padding: 12px 20px;
@@ -411,15 +473,18 @@
     border-color: #bbb;
   }
 
-  .wb-svg-container {
+  .wb-body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 20px 24px;
     background: #fff;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #333;
   }
 
-  .wb-svg-container::-webkit-scrollbar { width: 4px; }
-  .wb-svg-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+  .wb-body::-webkit-scrollbar { width: 4px; }
+  .wb-body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
 
   .wb-empty {
     display: flex;
@@ -433,13 +498,255 @@
     line-height: 1.6;
   }
 
-  .wb-conclusion {
+  /* ── Whiteboard Document Styles ──────────── */
+  .wb-doc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  .wb-doc-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 4px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #111;
+  }
+
+  .wb-doc-subtitle {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 20px;
+  }
+
+  .wb-section {
+    margin-bottom: 20px;
+  }
+
+  .wb-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .wb-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    border-left: 4px solid #ccc;
+    background: #fafafa;
+    transition: background 0.15s;
+  }
+
+  .wb-card:hover { background: #f0f4ff; }
+
+  .wb-card-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .wb-card-body { flex: 1; min-width: 0; }
+
+  .wb-card-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 2px;
+  }
+
+  .wb-card-desc {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .wb-card-meta {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 3px;
+  }
+
+  .wb-card-badge {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .wb-conf-high { background: #e8f5e9; color: #2e7d32; }
+  .wb-conf-mid  { background: #fff3e0; color: #e65100; }
+  .wb-conf-low  { background: #fbe9e7; color: #c62828; }
+
+  .wb-relation {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #555;
+  }
+
+  .wb-relation-arrow {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .wb-relation-type {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .wb-verdict {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #f8f9ff;
+    border: 1px solid #e0e4f0;
+    border-radius: 8px;
+  }
+
+  .wb-verdict-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #4A90D9;
+    margin-bottom: 6px;
+  }
+
+  .wb-verdict-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+    line-height: 1.5;
+  }
+
+  .wb-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #ddd, transparent);
+    margin: 16px 0;
+  }
+
+  .wb-flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .wb-flow-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .wb-flow-content { flex: 1; }
+
+  .wb-flow-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .wb-flow-desc {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  .wb-fork-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .wb-fork-option {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .wb-fork-option:hover {
+    border-color: #4A90D9;
+    background: #f8faff;
+  }
+
+  .wb-fork-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 4px;
+  }
+
+  .wb-fork-desc {
+    font-size: 10px;
+    color: #888;
+  }
+
+  .wb-risk-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: stretch;
+  }
+
+  .wb-risk-left, .wb-risk-right {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .wb-risk-center {
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+    color: #ccc;
+    padding: 0 4px;
+  }
+
+  .wb-risk-left {
+    background: #fbe9e7;
+    border-left: 3px solid #e53935;
+    text-align: right;
+  }
+
+  .wb-risk-right {
+    background: #e8f5e9;
+    border-left: 3px solid #43a047;
+  }
+
+  .wb-footer {
     padding: 10px 16px;
     border-top: 1px solid #eee;
-    font-size: 12px;
-    color: #555;
-    font-style: italic;
-    min-height: 38px;
+    font-size: 10px;
+    color: #aaa;
+    text-align: center;
   }
 
   /* ── 节点选中高亮指示 ─────────────────────── */
@@ -470,6 +777,15 @@
     </div>
     <div class="stats-bar" id="stats-bar"></div>
     <div class="conversation" id="conversation"></div>
+    <div class="chat-input-area">
+      <div class="chat-input-wrapper">
+        <textarea id="chat-input" placeholder="Describe your strategic situation..." rows="2"></textarea>
+        <button id="chat-send" onclick="sendMessage()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        </button>
+      </div>
+      <div class="chat-hint">Demo mode — conversation is pre-loaded</div>
+    </div>
     <div class="legend" id="legend"></div>
   </div>
 
@@ -513,10 +829,10 @@
       <button onclick="clearSelection()">Clear</button>
       <button onclick="exportWhiteboard()">Export PNG</button>
     </div>
-    <div class="wb-svg-container" id="wb-svg-container">
+    <div class="wb-body" id="wb-body">
       <div class="wb-empty">Click nodes in 3D view to build whiteboard summary</div>
     </div>
-    <div class="wb-conclusion" id="wb-conclusion"></div>
+    <div class="wb-footer" id="wb-footer">Strategic Canvas</div>
   </div>
 </div>
 
@@ -694,20 +1010,34 @@ function initGraph() {
         group.add(new T.Mesh(ringGeo, ringMat));
       }
 
-      // Text label
+      // Text label — high-res canvas for readability
       const cvs = document.createElement("canvas");
       const ctx = cvs.getContext("2d");
-      cvs.width = 256; cvs.height = 64;
-      ctx.font = "bold 20px sans-serif";
-      ctx.fillStyle = "#ffffff";
+      cvs.width = 512; cvs.height = 128;
+      // Background pill for contrast
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(256 - 180, 20, 360, 88, 16);
+        ctx.fill();
+      } else {
+        ctx.fillRect(256 - 180, 20, 360, 88);
+      }
+      // Type label
+      ctx.font = "bold 22px sans-serif";
+      ctx.fillStyle = color;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(truncate(n.label, 16), 128, 32);
+      ctx.fillText(n.node_type.toUpperCase(), 256, 48);
+      // Main label
+      ctx.font = "bold 28px sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(truncate(n.label, 20), 256, 82);
       const tex = new T.CanvasTexture(cvs);
-      const lblMat = new T.SpriteMaterial({ map: tex, transparent: true, opacity: 0.85 });
+      const lblMat = new T.SpriteMaterial({ map: tex, transparent: true, opacity: 0.95 });
       const lbl = new T.Sprite(lblMat);
-      lbl.scale.set(28, 7, 1);
-      lbl.position.set(0, size + 5, 0);
+      lbl.scale.set(48, 12, 1);
+      lbl.position.set(0, size + 8, 0);
       group.add(lbl);
 
       return group;
@@ -1002,25 +1332,65 @@ function clearSelection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Whiteboard Rendering
+// Chat Input (Demo Mode)
 // ═══════════════════════════════════════════════════════════════
 
-const WB = { W: 368, PAD: 16, BW: 140, BH: 50, RX: 6, FS: 11, TFS: 9 };
+function sendMessage() {
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Append user message to conversation display
+  const container = document.getElementById("conversation");
+  const turnDiv = document.createElement("div");
+  turnDiv.className = "turn";
+  turnDiv.innerHTML = `
+    <div class="turn-label user">You</div>
+    <div class="turn-text">${text}</div>
+  `;
+  container.appendChild(turnDiv);
+
+  // Auto-scroll to bottom
+  container.scrollTop = container.scrollHeight;
+  input.value = "";
+
+  // Demo mode: show a hint
+  setTimeout(() => {
+    const replyDiv = document.createElement("div");
+    replyDiv.className = "turn";
+    replyDiv.innerHTML = `
+      <div class="turn-label coach">Coach</div>
+      <div class="turn-text" style="color:#666;font-style:italic">
+        [Demo mode] In production, the AI coach would analyze your input and update the 3D graph in real-time.
+      </div>
+    `;
+    container.appendChild(replyDiv);
+    container.scrollTop = container.scrollHeight;
+  }, 500);
+}
+
+// Enter to send (Shift+Enter for newline)
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("chat-input");
+  if (input) {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Whiteboard Rendering — Document-style HTML output
+// ═══════════════════════════════════════════════════════════════
 
 const PATTERN_LABELS = {
   full_synthesis: "Full Synthesis", decision_fork: "Decision Fork",
   assumption_stack: "Assumption Stack", action_roadmap: "Action Roadmap",
   risk_radar: "Risk Radar", resource_map: "Resource Map",
 };
-
-const SYNTH_LAYERS = [
-  ["goal"],
-  ["position", "pattern"],
-  ["action", "mechanism"],
-  ["resource", "stakeholder"],
-  ["assumption", "signal", "evidence"],
-  ["risk", "tension", "constraint", "option"],
-];
 
 function getSelectedNodesData() {
   return DATA.graph.nodes.filter(n => selectedNodes.has(n.id));
@@ -1048,17 +1418,64 @@ function detectPattern() {
   return "full_synthesis";
 }
 
+function confBadge(conf) {
+  const pct = Math.round((conf || 0) * 100);
+  const cls = pct >= 70 ? "wb-conf-high" : pct >= 40 ? "wb-conf-mid" : "wb-conf-low";
+  return `<span class="wb-card-badge ${cls}">${pct}%</span>`;
+}
+
+function nodeCard(node) {
+  return `<div class="wb-card" style="border-left-color:${node.color}">
+    <span class="wb-card-dot" style="background:${node.color}"></span>
+    <div class="wb-card-body">
+      <div class="wb-card-label">${node.label}</div>
+      <div class="wb-card-desc">${node.content || ''}</div>
+      ${node.source_skill ? `<div class="wb-card-meta">via ${node.source_skill}</div>` : ''}
+    </div>
+    ${confBadge(node.confidence)}
+  </div>`;
+}
+
+function relationLine(edge, nodes) {
+  const sid = typeof edge.source === "object" ? edge.source.id : edge.source;
+  const tid = typeof edge.target === "object" ? edge.target.id : edge.target;
+  const src = nodes.find(n => n.id === sid);
+  const tgt = nodes.find(n => n.id === tid);
+  if (!src || !tgt) return '';
+  const color = edge.color || '#999';
+  return `<div class="wb-relation">
+    <span style="color:${src.color};font-weight:600">${truncate(src.label, 15)}</span>
+    <span class="wb-relation-type" style="background:${color}22;color:${color}">${edge.edge_type}</span>
+    <span class="wb-relation-arrow" style="color:${color}">&rarr;</span>
+    <span style="color:${tgt.color};font-weight:600">${truncate(tgt.label, 15)}</span>
+  </div>`;
+}
+
+function sectionBlock(title, content) {
+  return `<div class="wb-section">
+    <div class="wb-section-title">${title}</div>
+    ${content}
+  </div>`;
+}
+
+function verdictBlock(text) {
+  return `<div class="wb-verdict">
+    <div class="wb-verdict-label">Verdict</div>
+    <div class="wb-verdict-text">${text}</div>
+  </div>`;
+}
+
 function renderWhiteboard() {
-  const container = document.getElementById("wb-svg-container");
+  const container = document.getElementById("wb-body");
   const badge = document.getElementById("wb-pattern-badge");
   const countEl = document.getElementById("wb-count");
-  const conclEl = document.getElementById("wb-conclusion");
+  const footerEl = document.getElementById("wb-footer");
 
   if (selectedNodes.size === 0) {
     container.innerHTML = '<div class="wb-empty">Click nodes in 3D view to build whiteboard summary</div>';
     badge.textContent = "No Selection";
     countEl.textContent = "0 nodes selected";
-    conclEl.textContent = "";
+    footerEl.textContent = "Strategic Canvas";
     return;
   }
 
@@ -1069,83 +1486,18 @@ function renderWhiteboard() {
   countEl.textContent = `${nodes.length} nodes, ${edges.length} edges`;
   badge.textContent = PATTERN_LABELS[pattern] || pattern;
 
-  let svg, conclusion;
+  let html;
   switch (pattern) {
-    case "decision_fork": [svg, conclusion] = renderDecisionFork(nodes, edges); break;
-    case "assumption_stack": [svg, conclusion] = renderAssumptionStack(nodes, edges); break;
-    case "action_roadmap": [svg, conclusion] = renderActionRoadmap(nodes, edges); break;
-    case "risk_radar": [svg, conclusion] = renderRiskRadar(nodes, edges); break;
-    case "resource_map": [svg, conclusion] = renderResourceMap(nodes, edges); break;
-    default: [svg, conclusion] = renderFullSynthesis(nodes, edges);
+    case "decision_fork": html = renderDecisionFork(nodes, edges); break;
+    case "assumption_stack": html = renderAssumptionStack(nodes, edges); break;
+    case "action_roadmap": html = renderActionRoadmap(nodes, edges); break;
+    case "risk_radar": html = renderRiskRadar(nodes, edges); break;
+    case "resource_map": html = renderResourceMap(nodes, edges); break;
+    default: html = renderFullSynthesis(nodes, edges);
   }
 
-  container.innerHTML = svg;
-  conclEl.textContent = conclusion;
-}
-
-// ── SVG Primitives ──────────────────────────────────────────
-
-function svgDefs() {
-  const colors = ["#4CAF50","#F44336","#2196F3","#FF5722","#9E9E9E","#00BCD4","#AB47BC","#FF9800","#8BC34A","#E91E63","#3F51B5","#FF5252","#7C4DFF","#607D8B","#666"];
-  return `<defs>${colors.map(c =>
-    `<marker id="ah-${c.slice(1)}" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <path d="M0,0 L8,3 L0,6 Z" fill="${c}"/>
-    </marker>`
-  ).join("")}</defs>`;
-}
-
-function svgBox(x, y, node, w, h) {
-  w = w || WB.BW; h = h || WB.BH;
-  const c = node.color || "#999";
-  const conf = Math.round((node.confidence || 0) * 100);
-  const confColor = conf >= 70 ? "#4CAF50" : conf >= 40 ? "#FF9800" : "#F44336";
-  const label = truncate(node.label || "", 14);
-  const typeLabel = (node.node_type || "").toUpperCase();
-  return `<g transform="translate(${x},${y})">
-    <rect width="${w}" height="${h}" rx="${WB.RX}" fill="#fff" stroke="${c}" stroke-width="2"/>
-    <text x="8" y="15" font-size="${WB.TFS}" font-family="sans-serif" font-weight="700" fill="${c}" letter-spacing="0.5">${typeLabel}</text>
-    <text x="8" y="33" font-size="${WB.FS}" font-family="sans-serif" fill="#333">${label}</text>
-    <circle cx="${w - 12}" cy="12" r="5" fill="${confColor}"/>
-    <text x="${w - 12}" y="15" font-size="7" font-family="sans-serif" fill="#fff" text-anchor="middle">${conf}</text>
-  </g>`;
-}
-
-function svgArrow(x1, y1, x2, y2, label, color) {
-  color = color || "#999";
-  const mid = `ah-${color.slice(1)}`;
-  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-  let svg = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.5" marker-end="url(#${mid})"/>`;
-  if (label) {
-    svg += `<rect x="${mx - 40}" y="${my - 8}" width="80" height="14" rx="2" fill="#fff" stroke="#eee" stroke-width="0.5"/>`;
-    svg += `<text x="${mx}" y="${my + 3}" font-size="8" font-family="sans-serif" fill="#666" text-anchor="middle">${truncate(label, 14)}</text>`;
-  }
-  return svg;
-}
-
-function svgCurve(x1, y1, x2, y2, label, color) {
-  color = color || "#999";
-  const mid = `ah-${color.slice(1)}`;
-  const cx = (x1 + x2) / 2 + (Math.random() - 0.5) * 30;
-  const cy = (y1 + y2) / 2;
-  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-  let svg = `<path d="M${x1},${y1} Q${cx},${cy} ${x2},${y2}" fill="none" stroke="${color}" stroke-width="1.2" stroke-opacity="0.6" marker-end="url(#${mid})"/>`;
-  if (label) {
-    svg += `<text x="${mx}" y="${my - 4}" font-size="7" font-family="sans-serif" fill="#888" text-anchor="middle">${truncate(label, 12)}</text>`;
-  }
-  return svg;
-}
-
-function svgTitle(text, y) {
-  return `<text x="${WB.W/2}" y="${y || 20}" font-size="14" font-family="sans-serif" font-weight="700" fill="#111" text-anchor="middle">${text}</text>`;
-}
-
-function svgSubtitle(text, y) {
-  return `<text x="${WB.W/2}" y="${y || 36}" font-size="10" font-family="sans-serif" fill="#888" text-anchor="middle">${text}</text>`;
-}
-
-function wrapSvg(content, height) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" id="wb-svg" viewBox="0 0 ${WB.W} ${height}" width="${WB.W}" style="background:#fff">
-    ${svgDefs()}${content}</svg>`;
+  container.innerHTML = `<div class="wb-doc">${html}</div>`;
+  footerEl.textContent = `Strategic Canvas \u00b7 ${nodes.length} elements \u00b7 ${new Date().toLocaleDateString()}`;
 }
 
 // ── Layout A: Decision Fork ─────────────────────────────────
@@ -1154,41 +1506,59 @@ function renderDecisionFork(nodes, edges) {
   const tensions = nodes.filter(n => n.node_type === "tension");
   const options = nodes.filter(n => n.node_type === "option");
   const others = nodes.filter(n => n.node_type !== "tension" && n.node_type !== "option");
-  const t = tensions[0] || options[0];
-  const opts = options.length ? options : others.slice(0, 2);
-  let svg = "", y = 10;
+  const mainTension = tensions[0];
 
-  svg += svgTitle("Decision Fork", y + 16); y += 36;
-  if (t) {
-    const tx = (WB.W - WB.BW) / 2;
-    svg += svgBox(tx, y, t); y += WB.BH + 30;
+  let html = `<div class="wb-doc-title">Decision Fork Analysis</div>
+    <div class="wb-doc-subtitle">${nodes.length} elements analyzed</div>`;
 
-    opts.forEach((o, i) => {
-      const ox = (WB.W / (opts.length + 1)) * (i + 1) - WB.BW / 2;
-      svg += svgBox(ox, y, o);
-      const edge = edges.find(e => relatesToBoth(e, t.id, o.id));
-      svg += svgArrow(WB.W / 2, y - 30 + WB.BH, ox + WB.BW / 2, y, edge?.label || "", edge?.color || "#9E9E9E");
-    });
-    y += WB.BH + 30;
+  // Core tension
+  if (mainTension) {
+    html += sectionBlock("Core Tension", nodeCard(mainTension));
+  }
+  if (tensions.length > 1) {
+    html += sectionBlock("Related Tensions", tensions.slice(1).map(nodeCard).join(''));
   }
 
-  others.forEach((n, i) => {
-    const ox = (WB.W / (others.length + 1)) * (i + 1) - WB.BW / 2;
-    svg += svgBox(ox, y, n);
-    const edge = edges.find(e => involvesNode(e, n.id));
-    if (edge) {
-      const tgtOpt = opts.find(o => involvesNode(edge, o.id));
-      if (tgtOpt) {
-        const ti = opts.indexOf(tgtOpt);
-        const tgtX = (WB.W / (opts.length + 1)) * (ti + 1);
-        svg += svgArrow(ox + WB.BW / 2, y, tgtX, y - 30, edge.label || "", edge.color || "#999");
-      }
-    }
-  });
-  y += WB.BH + 20;
+  // Fork options
+  if (options.length > 0) {
+    let forkHtml = '<div class="wb-fork-container">';
+    options.forEach((o, i) => {
+      const relEdges = edges.filter(e => involvesNode(e, o.id));
+      const supports = relEdges.filter(e => e.edge_type === 'supports' || e.edge_type === 'enables').length;
+      const blocks = relEdges.filter(e => e.edge_type === 'contradicts' || e.edge_type === 'blocks').length;
+      forkHtml += `<div class="wb-fork-option" style="border-color:${o.color}">
+        <div style="font-size:9px;color:${o.color};font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Option ${i + 1}</div>
+        <div class="wb-fork-label">${o.label}</div>
+        <div class="wb-fork-desc">${o.content || ''}</div>
+        <div style="margin-top:6px;font-size:10px;color:#888">${confBadge(o.confidence)}
+          ${supports ? `<span style="color:#4CAF50;margin-left:6px">+${supports} support</span>` : ''}
+          ${blocks ? `<span style="color:#F44336;margin-left:6px">-${blocks} block</span>` : ''}
+        </div>
+      </div>`;
+    });
+    forkHtml += '</div>';
+    html += sectionBlock("Available Options", forkHtml);
+  }
 
-  const concl = `Core tension: ${t?.label || "?"}, with ${opts.length} options`;
-  return [wrapSvg(svg, y), concl];
+  // Supporting factors
+  if (others.length > 0) {
+    html += sectionBlock("Context & Constraints", others.map(nodeCard).join(''));
+  }
+
+  // Key relationships
+  if (edges.length > 0) {
+    html += sectionBlock("Key Relationships", edges.slice(0, 6).map(e => relationLine(e, nodes)).join(''));
+  }
+
+  // Verdict
+  const bestOption = options.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+  html += verdictBlock(
+    mainTension
+      ? `Core tension: "${mainTension.label}". ${options.length} options identified. ${bestOption ? `Strongest option: "${bestOption.label}" (${Math.round(bestOption.confidence * 100)}% confidence).` : ''}`
+      : `${options.length} decision paths under consideration.`
+  );
+
+  return html;
 }
 
 // ── Layout B: Assumption Stack ──────────────────────────────
@@ -1196,32 +1566,64 @@ function renderDecisionFork(nodes, edges) {
 function renderAssumptionStack(nodes, edges) {
   const assumptions = nodes.filter(n => n.node_type === "assumption");
   const signals = nodes.filter(n => n.node_type === "signal");
-  const others = nodes.filter(n => n.node_type !== "assumption" && n.node_type !== "signal");
-  let svg = "", y = 10;
+  const evidence = nodes.filter(n => n.node_type === "evidence");
+  const others = nodes.filter(n => !["assumption", "signal", "evidence"].includes(n.node_type));
 
-  svg += svgTitle("Assumption Validation", y + 16); y += 40;
+  let html = `<div class="wb-doc-title">Assumption Validation</div>
+    <div class="wb-doc-subtitle">${assumptions.length} assumptions, ${signals.length} signals</div>`;
 
-  const rows = Math.max(assumptions.length, signals.length, 1);
-  for (let i = 0; i < rows; i++) {
-    const a = assumptions[i];
-    const s = signals[i];
-    if (a) svg += svgBox(WB.PAD, y, a);
-    if (s) svg += svgBox(WB.W - WB.PAD - WB.BW, y, s);
-    if (a && s) {
-      const edge = edges.find(e => relatesToBoth(e, a.id, s.id));
-      svg += svgArrow(WB.W - WB.PAD - WB.BW, y + WB.BH / 2, WB.PAD + WB.BW, y + WB.BH / 2, edge?.label || "validates", edge?.color || "#00BCD4");
-    }
-    y += WB.BH + 20;
+  // Assumptions with validation status
+  if (assumptions.length > 0) {
+    let assHtml = '';
+    assumptions.forEach(a => {
+      const validatingEdges = edges.filter(e =>
+        e.edge_type === 'validates' && involvesNode(e, a.id)
+      );
+      const contradictEdges = edges.filter(e =>
+        e.edge_type === 'contradicts' && involvesNode(e, a.id)
+      );
+      const status = contradictEdges.length > 0 ? 'Challenged' :
+                     validatingEdges.length > 0 ? 'Has signals' : 'Unvalidated';
+      const statusColor = contradictEdges.length > 0 ? '#c62828' :
+                          validatingEdges.length > 0 ? '#2e7d32' : '#e65100';
+
+      assHtml += `<div class="wb-card" style="border-left-color:${a.color}">
+        <span class="wb-card-dot" style="background:${a.color}"></span>
+        <div class="wb-card-body">
+          <div class="wb-card-label">${a.label}</div>
+          <div class="wb-card-desc">${a.content || ''}</div>
+          <div class="wb-card-meta" style="color:${statusColor};font-weight:600">${status}${validatingEdges.length ? ` (${validatingEdges.length} signals)` : ''}</div>
+        </div>
+        ${confBadge(a.confidence)}
+      </div>`;
+    });
+    html += sectionBlock("Key Assumptions", assHtml);
   }
 
-  others.forEach((n, i) => {
-    svg += svgBox((WB.W - WB.BW) / 2, y, n);
-    y += WB.BH + 15;
-  });
-  y += 10;
+  // Validation signals
+  if (signals.length > 0) {
+    html += sectionBlock("Validation Signals", signals.map(nodeCard).join(''));
+  }
 
-  const concl = `${assumptions.length} key assumptions, ${signals.length} validation signals`;
-  return [wrapSvg(svg, y), concl];
+  // Evidence
+  if (evidence.length > 0) {
+    html += sectionBlock("Supporting Evidence", evidence.map(nodeCard).join(''));
+  }
+
+  // Other context
+  if (others.length > 0) {
+    html += sectionBlock("Related Elements", others.map(nodeCard).join(''));
+  }
+
+  // Verdict
+  const unvalidated = assumptions.filter(a => {
+    return !edges.some(e => e.edge_type === 'validates' && involvesNode(e, a.id));
+  });
+  html += verdictBlock(
+    `${assumptions.length} key assumptions identified. ${unvalidated.length > 0 ? `${unvalidated.length} remain unvalidated and require testing.` : 'All have validation signals.'} ${signals.length} early indicators being tracked.`
+  );
+
+  return html;
 }
 
 // ── Layout C: Action Roadmap ────────────────────────────────
@@ -1229,73 +1631,121 @@ function renderAssumptionStack(nodes, edges) {
 function renderActionRoadmap(nodes, edges) {
   const actions = nodes.filter(n => n.node_type === "action");
   const others = nodes.filter(n => n.node_type !== "action");
-  let svg = "", y = 10;
-  const smallW = 110;
 
-  svg += svgTitle("Action Roadmap", y + 16); y += 40;
+  // Topological sort by depends_on
+  const depEdges = edges.filter(e => e.edge_type === "depends_on");
+  const sorted = topoSort(actions, depEdges);
 
-  // Simple left-to-right
-  actions.forEach((a, i) => {
-    const x = WB.PAD + i * (smallW + 30);
-    if (x + smallW > WB.W) { y += WB.BH + 30; }
-    const ax = WB.PAD + (i % 2) * (smallW + 30);
-    svg += svgBox(ax, y, a, smallW, WB.BH);
-    if (i < actions.length - 1) {
-      svg += svgArrow(ax + smallW, y + WB.BH / 2, ax + smallW + 30, y + WB.BH / 2, "", "#9E9E9E");
-    }
-  });
-  y += WB.BH + 30;
+  let html = `<div class="wb-doc-title">Action Roadmap</div>
+    <div class="wb-doc-subtitle">${actions.length} steps identified</div>`;
 
-  others.forEach((n) => {
-    svg += svgBox((WB.W - WB.BW) / 2, y, n);
-    y += WB.BH + 15;
-  });
-  y += 10;
+  // Steps
+  if (sorted.length > 0) {
+    let stepsHtml = '';
+    sorted.forEach((a, i) => {
+      stepsHtml += `<div class="wb-flow-step">
+        <div class="wb-flow-num" style="background:${a.color}">${i + 1}</div>
+        <div class="wb-flow-content">
+          <div class="wb-flow-label">${a.label} ${confBadge(a.confidence)}</div>
+          <div class="wb-flow-desc">${a.content || ''}</div>
+          ${a.source_skill ? `<div style="font-size:10px;color:#aaa;margin-top:2px">via ${a.source_skill}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += sectionBlock("Recommended Sequence", stepsHtml);
+  }
 
-  const concl = `${actions.length} steps. First: ${actions[0]?.label || '?'}`;
-  return [wrapSvg(svg, y), concl];
+  // Dependencies
+  if (depEdges.length > 0) {
+    html += sectionBlock("Dependencies", depEdges.map(e => relationLine(e, nodes)).join(''));
+  }
+
+  // Supporting context
+  if (others.length > 0) {
+    html += sectionBlock("Prerequisites & Context", others.map(nodeCard).join(''));
+  }
+
+  // Verdict
+  html += verdictBlock(
+    `${sorted.length}-step action plan. First step: "${sorted[0]?.label || '?'}". ${depEdges.length} dependencies identified.`
+  );
+
+  return html;
 }
 
 // ── Layout D: Risk Radar ────────────────────────────────────
 
 function renderRiskRadar(nodes, edges) {
   const risks = nodes.filter(n => n.node_type === "risk");
-  const mitigators = [];
-  const amplifiers = [];
   const others = nodes.filter(n => n.node_type !== "risk");
 
+  let html = `<div class="wb-doc-title">Risk Analysis</div>
+    <div class="wb-doc-subtitle">${risks.length} risks identified</div>`;
+
+  // Risk cards with amplifiers/mitigators
+  if (risks.length > 0) {
+    let riskHtml = '';
+    risks.forEach(r => {
+      const ampEdges = edges.filter(e => e.edge_type === 'amplifies' && involvesNode(e, r.id));
+      const mitEdges = edges.filter(e => e.edge_type === 'mitigates' && involvesNode(e, r.id));
+
+      riskHtml += `<div class="wb-card" style="border-left-color:${r.color}">
+        <span class="wb-card-dot" style="background:${r.color}"></span>
+        <div class="wb-card-body">
+          <div class="wb-card-label">${r.label}</div>
+          <div class="wb-card-desc">${r.content || ''}</div>`;
+
+      if (ampEdges.length > 0 || mitEdges.length > 0) {
+        riskHtml += `<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">`;
+        ampEdges.forEach(e => {
+          const other = getOtherNode(e, r.id, nodes);
+          if (other) riskHtml += `<span style="font-size:10px;color:#c62828;background:#fbe9e7;padding:1px 6px;border-radius:4px">&uarr; ${truncate(other.label, 12)}</span>`;
+        });
+        mitEdges.forEach(e => {
+          const other = getOtherNode(e, r.id, nodes);
+          if (other) riskHtml += `<span style="font-size:10px;color:#2e7d32;background:#e8f5e9;padding:1px 6px;border-radius:4px">&darr; ${truncate(other.label, 12)}</span>`;
+        });
+        riskHtml += `</div>`;
+      }
+      riskHtml += `</div>${confBadge(r.confidence)}</div>`;
+    });
+    html += sectionBlock("Risk Assessment", riskHtml);
+  }
+
+  // Amplifiers vs Mitigators summary
+  const ampNodes = [], mitNodes = [], neutralNodes = [];
   others.forEach(n => {
-    const e = edges.find(e => involvesNode(e, n.id) && e.edge_type === "mitigates");
-    if (e) { mitigators.push(n); return; }
-    const e2 = edges.find(e => involvesNode(e, n.id) && e.edge_type === "amplifies");
-    if (e2) { amplifiers.push(n); return; }
-    mitigators.push(n); // default to mitigator side
+    const isAmp = edges.some(e => e.edge_type === 'amplifies' && involvesNode(e, n.id));
+    const isMit = edges.some(e => e.edge_type === 'mitigates' && involvesNode(e, n.id));
+    if (isAmp) ampNodes.push(n);
+    else if (isMit) mitNodes.push(n);
+    else neutralNodes.push(n);
   });
 
-  let svg = "", y = 10;
-  svg += svgTitle("Risk Analysis", y + 16); y += 40;
+  if (ampNodes.length > 0 || mitNodes.length > 0) {
+    let balanceHtml = '';
+    const maxRows = Math.max(ampNodes.length, mitNodes.length);
+    for (let i = 0; i < maxRows; i++) {
+      balanceHtml += `<div class="wb-risk-row">
+        <div class="wb-risk-left">${ampNodes[i] ? `<span style="font-weight:600">${ampNodes[i].label}</span>` : ''}</div>
+        <div class="wb-risk-center">${ampNodes[i] || mitNodes[i] ? '&harr;' : ''}</div>
+        <div class="wb-risk-right">${mitNodes[i] ? `<span style="font-weight:600">${mitNodes[i].label}</span>` : ''}</div>
+      </div>`;
+    }
+    html += sectionBlock("Risk Amplifiers vs Mitigators", balanceHtml);
+  }
 
-  const centerX = (WB.W - WB.BW) / 2;
-  risks.forEach((r, i) => {
-    const ry = y + i * (WB.BH + 60);
-    svg += svgBox(centerX, ry, r);
+  if (neutralNodes.length > 0) {
+    html += sectionBlock("Related Factors", neutralNodes.map(nodeCard).join(''));
+  }
 
-    amplifiers.forEach((a, j) => {
-      const ay = ry + (j - amplifiers.length / 2) * 55;
-      svg += svgBox(WB.PAD, Math.max(y, ay), a, 100, 40);
-      svg += svgArrow(WB.PAD + 100, Math.max(y, ay) + 20, centerX, ry + WB.BH / 2, "amplifies", "#E91E63");
-    });
+  // Verdict
+  const highRisks = risks.filter(r => r.confidence >= 0.7);
+  html += verdictBlock(
+    `${risks.length} risks mapped. ${highRisks.length} rated high-confidence. ${mitNodes.length} mitigating factors identified against ${ampNodes.length} amplifiers.`
+  );
 
-    mitigators.forEach((m, j) => {
-      const my = ry + (j - mitigators.length / 2) * 55;
-      svg += svgBox(WB.W - WB.PAD - 100, Math.max(y, my), m, 100, 40);
-      svg += svgArrow(WB.W - WB.PAD - 100, Math.max(y, my) + 20, centerX + WB.BW, ry + WB.BH / 2, "mitigates", "#8BC34A");
-    });
-  });
-
-  y += risks.length * (WB.BH + 60) + Math.max(amplifiers.length, mitigators.length) * 30;
-  const concl = `${risks.length} risks identified, ${mitigators.length} mitigations`;
-  return [wrapSvg(svg, Math.max(y, 200)), concl];
+  return html;
 }
 
 // ── Layout E: Resource Map ──────────────────────────────────
@@ -1303,73 +1753,144 @@ function renderRiskRadar(nodes, edges) {
 function renderResourceMap(nodes, edges) {
   const resources = nodes.filter(n => n.node_type === "resource");
   const targets = nodes.filter(n => n.node_type !== "resource");
-  let svg = "", y = 10;
 
-  svg += svgTitle("Resource Map", y + 16); y += 40;
+  let html = `<div class="wb-doc-title">Resource Map</div>
+    <div class="wb-doc-subtitle">${resources.length} resources, ${targets.length} targets</div>`;
 
-  const rows = Math.max(resources.length, targets.length, 1);
-  for (let i = 0; i < rows; i++) {
-    const r = resources[i];
-    const t = targets[i];
-    if (r) svg += svgBox(WB.PAD, y, r);
-    if (t) svg += svgBox(WB.W - WB.PAD - WB.BW, y, t);
-    if (r && t) {
-      const edge = edges.find(e => relatesToBoth(e, r.id, t.id));
-      svg += svgArrow(WB.PAD + WB.BW, y + WB.BH / 2, WB.W - WB.PAD - WB.BW, y + WB.BH / 2, edge?.label || "enables", edge?.color || "#2196F3");
-    }
-    y += WB.BH + 20;
+  // Resources
+  if (resources.length > 0) {
+    html += sectionBlock("Available Resources", resources.map(nodeCard).join(''));
   }
-  y += 10;
 
-  const concl = `${resources.length} resources enabling ${targets.length} targets`;
-  return [wrapSvg(svg, y), concl];
+  // Resource → Target connections
+  if (edges.length > 0) {
+    html += sectionBlock("Resource Utilization", edges.slice(0, 8).map(e => relationLine(e, nodes)).join(''));
+  }
+
+  // Targets
+  if (targets.length > 0) {
+    html += sectionBlock("Enabled Targets", targets.map(nodeCard).join(''));
+  }
+
+  // Verdict
+  const enableEdges = edges.filter(e => e.edge_type === 'enables');
+  const unusedRes = resources.filter(r => !edges.some(e => involvesNode(e, r.id)));
+  html += verdictBlock(
+    `${resources.length} resources identified. ${enableEdges.length} enabling relationships. ${unusedRes.length > 0 ? `${unusedRes.length} resources not yet leveraged.` : 'All resources connected to targets.'}`
+  );
+
+  return html;
 }
 
 // ── Layout F: Full Synthesis ────────────────────────────────
 
 function renderFullSynthesis(nodes, edges) {
-  let svg = "", y = 10;
-  const smallW = 105, smallH = 44;
+  const SECTION_ORDER = [
+    { key: "goal", title: "Strategic Goal", icon: "north_star" },
+    { key: "position", title: "Strategic Position" },
+    { key: "tension", title: "Core Tensions" },
+    { key: "option", title: "Strategic Options" },
+    { key: "action", title: "Recommended Actions" },
+    { key: "resource", title: "Resources & Capabilities" },
+    { key: "assumption", title: "Key Assumptions" },
+    { key: "risk", title: "Risks & Threats" },
+    { key: "signal", title: "Validation Signals" },
+    { key: "evidence", title: "Evidence Base" },
+    { key: "mechanism", title: "Strategic Mechanisms" },
+    { key: "stakeholder", title: "Stakeholders" },
+    { key: "constraint", title: "Constraints" },
+    { key: "pattern", title: "Strategic Patterns" },
+  ];
 
-  svg += svgTitle("Strategic Synthesis", y + 16);
-  svg += svgSubtitle(`${nodes.length} elements \u00b7 ${edges.length} relationships`, y + 32);
-  y += 46;
-
-  const nodePositions = {}; // id -> {cx, cy}
-
-  SYNTH_LAYERS.forEach(layerTypes => {
-    const layerNodes = nodes.filter(n => layerTypes.includes(n.node_type))
-      .sort((a, b) => (b.weight || 1) - (a.weight || 1));
-    if (layerNodes.length === 0) return;
-
-    layerNodes.forEach((n, i) => {
-      const x = (WB.W / (layerNodes.length + 1)) * (i + 1) - smallW / 2;
-      svg += svgBox(x, y, n, smallW, smallH);
-      nodePositions[n.id] = { cx: x + smallW / 2, cy: y + smallH / 2, top: y, bot: y + smallH };
-    });
-    y += smallH + 24;
-  });
-
-  // Draw edges as curves
-  edges.forEach(e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
-    const sp = nodePositions[sid], tp = nodePositions[tid];
-    if (!sp || !tp) return;
-    const fromY = sp.cy < tp.cy ? sp.bot : sp.top;
-    const toY = sp.cy < tp.cy ? tp.top : tp.bot;
-    svg += svgCurve(sp.cx, fromY, tp.cx, toY, e.label, e.color);
-  });
-
-  y += 10;
-
-  // Conclusion
   const goal = nodes.find(n => n.node_type === "goal");
   const avgConf = Math.round(nodes.reduce((s, n) => s + (n.confidence || 0), 0) / nodes.length * 100);
-  const concl = goal
-    ? `Goal: ${goal.label} \u00b7 Confidence: ${avgConf}%`
-    : `${nodes.length} strategic elements analyzed \u00b7 Avg confidence: ${avgConf}%`;
-  return [wrapSvg(svg, y), concl];
+
+  let html = `<div class="wb-doc-title">Strategic Synthesis</div>
+    <div class="wb-doc-subtitle">${nodes.length} elements \u00b7 ${edges.length} relationships \u00b7 Avg confidence: ${avgConf}%</div>`;
+
+  // Goal highlight at top
+  if (goal) {
+    html += `<div class="wb-verdict" style="margin-bottom:20px;border-color:${goal.color}44;background:${goal.color}08">
+      <div class="wb-verdict-label" style="color:${goal.color}">Strategic Goal</div>
+      <div class="wb-verdict-text">${goal.label}</div>
+      <div style="font-size:12px;color:#666;margin-top:4px">${goal.content || ''}</div>
+    </div>`;
+  }
+
+  // Sections
+  SECTION_ORDER.forEach(sec => {
+    if (sec.key === "goal" && goal) return; // already shown above
+    const sectionNodes = nodes.filter(n => n.node_type === sec.key)
+      .sort((a, b) => (b.weight || 1) - (a.weight || 1));
+    if (sectionNodes.length === 0) return;
+    html += sectionBlock(sec.title, sectionNodes.map(nodeCard).join(''));
+  });
+
+  // Key relationships
+  if (edges.length > 0) {
+    const importantEdges = edges.filter(e =>
+      ['contradicts', 'blocks', 'tradeoff', 'enables', 'supports'].includes(e.edge_type)
+    ).slice(0, 8);
+    if (importantEdges.length === 0) importantEdges.push(...edges.slice(0, 6));
+    html += sectionBlock("Key Relationships", importantEdges.map(e => relationLine(e, nodes)).join(''));
+  }
+
+  // Verdict
+  const tensions = nodes.filter(n => n.node_type === "tension");
+  const actions = nodes.filter(n => n.node_type === "action");
+  const risks = nodes.filter(n => n.node_type === "risk");
+  const verdictParts = [];
+  if (goal) verdictParts.push(`Goal: "${goal.label}"`);
+  if (tensions.length) verdictParts.push(`${tensions.length} core tensions to resolve`);
+  if (actions.length) verdictParts.push(`${actions.length} action steps identified`);
+  if (risks.length) verdictParts.push(`${risks.length} risks to monitor`);
+  verdictParts.push(`Overall confidence: ${avgConf}%`);
+  html += verdictBlock(verdictParts.join('. ') + '.');
+
+  return html;
+}
+
+// ── Helpers ────────────────────────────────────────────────
+
+function topoSort(nodes, depEdges) {
+  // Simple topological sort for action sequences
+  const ids = new Set(nodes.map(n => n.id));
+  const inDeg = {};
+  const adj = {};
+  nodes.forEach(n => { inDeg[n.id] = 0; adj[n.id] = []; });
+  depEdges.forEach(e => {
+    const sid = typeof e.source === "object" ? e.source.id : e.source;
+    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    if (ids.has(sid) && ids.has(tid)) {
+      // sid depends_on tid → tid comes first
+      adj[tid] = adj[tid] || [];
+      adj[tid].push(sid);
+      inDeg[sid] = (inDeg[sid] || 0) + 1;
+    }
+  });
+  const queue = nodes.filter(n => (inDeg[n.id] || 0) === 0);
+  const result = [];
+  while (queue.length > 0) {
+    const n = queue.shift();
+    result.push(n);
+    (adj[n.id] || []).forEach(nextId => {
+      inDeg[nextId]--;
+      if (inDeg[nextId] === 0) {
+        const nextNode = nodes.find(x => x.id === nextId);
+        if (nextNode) queue.push(nextNode);
+      }
+    });
+  }
+  // Add any remaining (cycles)
+  nodes.forEach(n => { if (!result.find(r => r.id === n.id)) result.push(n); });
+  return result;
+}
+
+function getOtherNode(edge, nodeId, nodes) {
+  const sid = typeof edge.source === "object" ? edge.source.id : edge.source;
+  const tid = typeof edge.target === "object" ? edge.target.id : edge.target;
+  const otherId = sid === nodeId ? tid : sid;
+  return nodes.find(n => n.id === otherId);
 }
 
 // ── Edge helpers ────────────────────────────────────────────
@@ -1391,33 +1912,20 @@ function relatesToBoth(edge, id1, id2) {
 // ═══════════════════════════════════════════════════════════════
 
 function exportWhiteboard() {
-  const svgEl = document.getElementById("wb-svg");
-  if (!svgEl) { alert("No whiteboard content to export"); return; }
+  const wbDoc = document.querySelector(".wb-doc");
+  if (!wbDoc) { alert("No whiteboard content to export"); return; }
 
-  const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(svgEl);
-  const canvas = document.createElement("canvas");
-  const bbox = svgEl.getBoundingClientRect();
-  canvas.width = bbox.width * 2;
-  canvas.height = bbox.height * 2;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(2, 2);
-
-  const img = new Image();
-  const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  img.onload = () => {
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, bbox.width, bbox.height);
-    URL.revokeObjectURL(url);
-    const link = document.createElement("a");
-    link.download = "whiteboard-summary.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-  img.src = url;
+  // Use html2canvas-like approach: render to a hidden iframe then capture
+  // Simpler approach: copy HTML to a new window for print/save
+  const printWin = window.open('', '_blank', 'width=800,height=600');
+  printWin.document.write(`<!DOCTYPE html><html><head><title>Strategic Canvas Summary</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; max-width: 700px; margin: 0 auto; color: #333; }
+      ${document.querySelector('style').textContent}
+      @media print { body { padding: 20px; } }
+    </style></head><body>${wbDoc.outerHTML}</body></html>`);
+  printWin.document.close();
+  setTimeout(() => printWin.print(), 300);
 }
 </script>
 
