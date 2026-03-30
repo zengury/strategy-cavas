@@ -177,54 +177,128 @@
     text-align: center;
   }
 
-  /* ── 图例 ──────────────────────────────────── */
-  .legend {
-    padding: 12px 20px;
+  /* ── 节点选择器 ────────────────────────────── */
+  .node-selector {
     border-top: 1px solid #222;
-    max-height: 200px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    max-height: 40vh;
+    overflow: hidden;
   }
 
-  .legend-title {
+  .ns-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid #222;
+  }
+
+  .ns-title {
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: #666;
-    margin-bottom: 8px;
   }
 
-  .legend-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
+  .ns-actions {
+    display: flex;
+    gap: 6px;
   }
 
-  .legend-item {
+  .ns-actions button {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ns-actions button:hover {
+    background: #1a1a26;
+    color: #fff;
+    border-color: #4A90D9;
+  }
+
+  .ns-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+
+  .ns-list::-webkit-scrollbar { width: 3px; }
+  .ns-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .ns-group-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 6px 16px 2px;
+    color: #555;
+  }
+
+  .ns-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: #999;
+    gap: 8px;
+    padding: 4px 16px;
     cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 3px;
-    transition: background 0.15s;
+    transition: background 0.1s;
+    font-size: 12px;
+    color: #bbb;
   }
 
-  .legend-item:hover {
-    background: #1a1a24;
+  .ns-item:hover {
+    background: #1a1a26;
+  }
+
+  .ns-item.selected {
+    background: #1a1a2e;
     color: #fff;
   }
 
-  .legend-item.dimmed {
-    opacity: 0.3;
+  .ns-check {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-size: 10px;
   }
 
-  .legend-dot {
-    width: 8px;
-    height: 8px;
+  .ns-item.selected .ns-check {
+    border-color: #4A90D9;
+    background: #4A90D9;
+    color: #fff;
+  }
+
+  .ns-dot {
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ns-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ns-conf {
+    font-size: 9px;
+    color: #666;
     flex-shrink: 0;
   }
 
@@ -381,17 +455,27 @@
     min-width: 60px;
   }
 
-  /* ── 右栏白板面板 ─────────────────────────── */
+  /* ── 右栏面板 ─────────────────────────────── */
   .whiteboard-panel {
     flex: 2;
     min-width: 250px;
-    background: #ffffff;
-    border-left: none;
     display: flex;
     flex-direction: column;
     z-index: 10;
-    color: #333;
     overflow: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Dark (blackboard) theme — default */
+  .whiteboard-panel.dark {
+    background: #0d0d14;
+    color: #d8d8d8;
+  }
+
+  /* Light (whiteboard) theme */
+  .whiteboard-panel.light {
+    background: #ffffff;
+    color: #333;
   }
 
   /* ── 拖拽分隔条 ────────────────────────────── */
@@ -409,48 +493,66 @@
     background: #4A90D9;
   }
 
-  .resizer.light {
-    background: #ddd;
-  }
-
-  .resizer.light:hover, .resizer.light.active {
-    background: #4A90D9;
-  }
-
   .wb-header {
     padding: 12px 16px;
-    border-bottom: 1px solid #eee;
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
+  .whiteboard-panel.dark .wb-header { border-bottom: 1px solid #222; }
+  .whiteboard-panel.light .wb-header { border-bottom: 1px solid #eee; }
+
   .wb-header h2 {
     font-size: 14px;
     font-weight: 700;
-    color: #111;
     letter-spacing: 0.5px;
   }
+
+  .whiteboard-panel.dark .wb-header h2 { color: #e0e0e0; }
+  .whiteboard-panel.light .wb-header h2 { color: #111; }
 
   .wb-pattern-badge {
     font-size: 10px;
     padding: 2px 8px;
     border-radius: 10px;
-    background: #e8f0fe;
-    color: #1a73e8;
     font-weight: 600;
   }
+
+  .whiteboard-panel.dark .wb-pattern-badge { background: #1a2744; color: #5ba3f5; }
+  .whiteboard-panel.light .wb-pattern-badge { background: #e8f0fe; color: #1a73e8; }
+
+  .wb-theme-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .whiteboard-panel.dark .wb-theme-btn { color: #aaa; border-color: #333; }
+  .whiteboard-panel.dark .wb-theme-btn:hover { background: #1a1a26; color: #fff; }
+  .whiteboard-panel.light .wb-theme-btn { color: #666; border-color: #ddd; }
+  .whiteboard-panel.light .wb-theme-btn:hover { background: #f0f0f0; color: #111; }
 
   .wb-toolbar {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    border-bottom: 1px solid #eee;
     font-size: 11px;
-    color: #666;
     flex-wrap: wrap;
   }
+
+  .whiteboard-panel.dark .wb-toolbar { border-bottom: 1px solid #222; color: #777; }
+  .whiteboard-panel.light .wb-toolbar { border-bottom: 1px solid #eee; color: #666; }
 
   .wb-toolbar .wb-count {
     flex: 1;
@@ -459,16 +561,28 @@
 
   .wb-toolbar button {
     padding: 4px 10px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
     border-radius: 4px;
-    color: #333;
     font-size: 11px;
     cursor: pointer;
     transition: all 0.15s;
   }
 
-  .wb-toolbar button:hover {
+  .whiteboard-panel.dark .wb-toolbar button {
+    background: #1a1a26;
+    border: 1px solid #333;
+    color: #aaa;
+  }
+  .whiteboard-panel.dark .wb-toolbar button:hover {
+    background: #252536;
+    border-color: #4A90D9;
+    color: #fff;
+  }
+  .whiteboard-panel.light .wb-toolbar button {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+  }
+  .whiteboard-panel.light .wb-toolbar button:hover {
     background: #e8e8e8;
     border-color: #bbb;
   }
@@ -477,59 +591,59 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px 24px;
-    background: #fff;
     font-size: 13px;
     line-height: 1.7;
-    color: #333;
   }
 
+  .whiteboard-panel.dark .wb-body { background: #0d0d14; color: #d0d0d0; }
+  .whiteboard-panel.light .wb-body { background: #fff; color: #333; }
+
   .wb-body::-webkit-scrollbar { width: 4px; }
-  .wb-body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+  .whiteboard-panel.dark .wb-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  .whiteboard-panel.light .wb-body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
 
   .wb-empty {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #999;
     font-size: 13px;
     text-align: center;
     padding: 40px;
     line-height: 1.6;
   }
 
-  /* ── Whiteboard Document Styles ──────────── */
+  .whiteboard-panel.dark .wb-empty { color: #555; }
+  .whiteboard-panel.light .wb-empty { color: #999; }
+
+  /* ── Document styles (theme-aware) ──────── */
   .wb-doc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
   .wb-doc-title {
     font-size: 18px;
     font-weight: 700;
-    color: #111;
     margin-bottom: 4px;
     padding-bottom: 8px;
-    border-bottom: 3px solid #111;
   }
+  .dark .wb-doc-title { color: #f0f0f0; border-bottom: 3px solid #f0f0f0; }
+  .light .wb-doc-title { color: #111; border-bottom: 3px solid #111; }
 
-  .wb-doc-subtitle {
-    font-size: 11px;
-    color: #888;
-    margin-bottom: 20px;
-  }
+  .wb-doc-subtitle { font-size: 11px; margin-bottom: 20px; }
+  .dark .wb-doc-subtitle { color: #666; }
+  .light .wb-doc-subtitle { color: #888; }
 
-  .wb-section {
-    margin-bottom: 20px;
-  }
+  .wb-section { margin-bottom: 20px; }
 
   .wb-section-title {
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #888;
     margin-bottom: 8px;
     padding-bottom: 4px;
-    border-bottom: 1px solid #eee;
   }
+  .dark .wb-section-title { color: #777; border-bottom: 1px solid #1e1e2e; }
+  .light .wb-section-title { color: #888; border-bottom: 1px solid #eee; }
 
   .wb-card {
     display: flex;
@@ -539,215 +653,126 @@
     margin-bottom: 6px;
     border-radius: 6px;
     border-left: 4px solid #ccc;
-    background: #fafafa;
     transition: background 0.15s;
   }
-
-  .wb-card:hover { background: #f0f4ff; }
+  .dark .wb-card { background: #12121e; }
+  .dark .wb-card:hover { background: #181830; }
+  .light .wb-card { background: #fafafa; }
+  .light .wb-card:hover { background: #f0f4ff; }
 
   .wb-card-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 3px;
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px;
   }
 
   .wb-card-body { flex: 1; min-width: 0; }
 
-  .wb-card-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #222;
-    margin-bottom: 2px;
-  }
+  .wb-card-label { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .dark .wb-card-label { color: #e8e8e8; }
+  .light .wb-card-label { color: #222; }
 
-  .wb-card-desc {
-    font-size: 11px;
-    color: #666;
-    line-height: 1.5;
-  }
+  .wb-card-desc { font-size: 11px; line-height: 1.5; }
+  .dark .wb-card-desc { color: #888; }
+  .light .wb-card-desc { color: #666; }
 
-  .wb-card-meta {
-    font-size: 10px;
-    color: #aaa;
-    margin-top: 3px;
-  }
+  .wb-card-meta { font-size: 10px; margin-top: 3px; }
+  .dark .wb-card-meta { color: #555; }
+  .light .wb-card-meta { color: #aaa; }
 
   .wb-card-badge {
-    font-size: 9px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
-    margin-top: 2px;
+    font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; margin-top: 2px;
   }
 
-  .wb-conf-high { background: #e8f5e9; color: #2e7d32; }
-  .wb-conf-mid  { background: #fff3e0; color: #e65100; }
-  .wb-conf-low  { background: #fbe9e7; color: #c62828; }
+  .wb-conf-high { background: #1b3a1b; color: #66bb6a; }
+  .wb-conf-mid  { background: #3a2a10; color: #ffa726; }
+  .wb-conf-low  { background: #3a1515; color: #ef5350; }
+  .light .wb-conf-high { background: #e8f5e9; color: #2e7d32; }
+  .light .wb-conf-mid  { background: #fff3e0; color: #e65100; }
+  .light .wb-conf-low  { background: #fbe9e7; color: #c62828; }
 
   .wb-relation {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    margin-bottom: 4px;
-    font-size: 11px;
-    color: #555;
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 8px; margin-bottom: 4px; font-size: 11px;
   }
+  .dark .wb-relation { color: #999; }
+  .light .wb-relation { color: #555; }
 
-  .wb-relation-arrow {
-    font-size: 14px;
-    font-weight: 700;
-  }
+  .wb-relation-arrow { font-size: 14px; font-weight: 700; }
 
   .wb-relation-type {
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    padding: 1px 6px;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 4px; letter-spacing: 0.5px;
   }
 
   .wb-verdict {
-    margin-top: 16px;
-    padding: 14px 16px;
-    background: #f8f9ff;
-    border: 1px solid #e0e4f0;
-    border-radius: 8px;
+    margin-top: 16px; padding: 14px 16px; border-radius: 8px;
   }
+  .dark .wb-verdict { background: #0e1428; border: 1px solid #1a2744; }
+  .light .wb-verdict { background: #f8f9ff; border: 1px solid #e0e4f0; }
 
   .wb-verdict-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #4A90D9;
-    margin-bottom: 6px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #4A90D9; margin-bottom: 6px;
   }
 
-  .wb-verdict-text {
-    font-size: 14px;
-    font-weight: 600;
-    color: #222;
-    line-height: 1.5;
-  }
+  .wb-verdict-text { font-size: 14px; font-weight: 600; line-height: 1.5; }
+  .dark .wb-verdict-text { color: #e0e0e0; }
+  .light .wb-verdict-text { color: #222; }
 
-  .wb-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #ddd, transparent);
-    margin: 16px 0;
-  }
+  .wb-divider { height: 1px; margin: 16px 0; }
+  .dark .wb-divider { background: linear-gradient(90deg, transparent, #2a2a3a, transparent); }
+  .light .wb-divider { background: linear-gradient(90deg, transparent, #ddd, transparent); }
 
-  .wb-flow-step {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+  .wb-flow-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
 
   .wb-flow-num {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
   }
 
   .wb-flow-content { flex: 1; }
 
-  .wb-flow-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #222;
-  }
+  .wb-flow-label { font-size: 13px; font-weight: 600; }
+  .dark .wb-flow-label { color: #e0e0e0; }
+  .light .wb-flow-label { color: #222; }
 
-  .wb-flow-desc {
-    font-size: 11px;
-    color: #666;
-    margin-top: 2px;
-  }
+  .wb-flow-desc { font-size: 11px; margin-top: 2px; }
+  .dark .wb-flow-desc { color: #777; }
+  .light .wb-flow-desc { color: #666; }
 
-  .wb-fork-container {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+  .wb-fork-container { display: flex; gap: 12px; margin-bottom: 12px; }
 
-  .wb-fork-option {
-    flex: 1;
-    padding: 12px;
-    border: 2px solid #eee;
-    border-radius: 8px;
-    text-align: center;
-  }
+  .wb-fork-option { flex: 1; padding: 12px; border-radius: 8px; text-align: center; }
+  .dark .wb-fork-option { border: 2px solid #222; }
+  .dark .wb-fork-option:hover { border-color: #4A90D9; background: #0e1428; }
+  .light .wb-fork-option { border: 2px solid #eee; }
+  .light .wb-fork-option:hover { border-color: #4A90D9; background: #f8faff; }
 
-  .wb-fork-option:hover {
-    border-color: #4A90D9;
-    background: #f8faff;
-  }
+  .wb-fork-label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .dark .wb-fork-label { color: #e0e0e0; }
+  .light .wb-fork-label { color: #222; }
 
-  .wb-fork-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #222;
-    margin-bottom: 4px;
-  }
+  .wb-fork-desc { font-size: 10px; }
+  .dark .wb-fork-desc { color: #666; }
+  .light .wb-fork-desc { color: #888; }
 
-  .wb-fork-desc {
-    font-size: 10px;
-    color: #888;
-  }
+  .wb-risk-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch; }
 
-  .wb-risk-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-    align-items: stretch;
-  }
+  .wb-risk-left, .wb-risk-right { flex: 1; padding: 8px 10px; border-radius: 6px; font-size: 11px; }
 
-  .wb-risk-left, .wb-risk-right {
-    flex: 1;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-  }
+  .wb-risk-center { display: flex; align-items: center; font-size: 18px; padding: 0 4px; }
+  .dark .wb-risk-center { color: #444; }
+  .light .wb-risk-center { color: #ccc; }
 
-  .wb-risk-center {
-    display: flex;
-    align-items: center;
-    font-size: 18px;
-    color: #ccc;
-    padding: 0 4px;
-  }
+  .dark .wb-risk-left { background: #2a1515; border-left: 3px solid #e53935; color: #ef9a9a; text-align: right; }
+  .dark .wb-risk-right { background: #152a15; border-left: 3px solid #43a047; color: #a5d6a7; }
+  .light .wb-risk-left { background: #fbe9e7; border-left: 3px solid #e53935; text-align: right; }
+  .light .wb-risk-right { background: #e8f5e9; border-left: 3px solid #43a047; }
 
-  .wb-risk-left {
-    background: #fbe9e7;
-    border-left: 3px solid #e53935;
-    text-align: right;
-  }
-
-  .wb-risk-right {
-    background: #e8f5e9;
-    border-left: 3px solid #43a047;
-  }
-
-  .wb-footer {
-    padding: 10px 16px;
-    border-top: 1px solid #eee;
-    font-size: 10px;
-    color: #aaa;
-    text-align: center;
-  }
+  .wb-footer { padding: 10px 16px; font-size: 10px; text-align: center; }
+  .dark .wb-footer { border-top: 1px solid #222; color: #444; }
+  .light .wb-footer { border-top: 1px solid #eee; color: #aaa; }
 
   /* ── 节点选中高亮指示 ─────────────────────── */
   .node-selected-indicator {
@@ -786,7 +811,16 @@
       </div>
       <div class="chat-hint">Demo mode — conversation is pre-loaded</div>
     </div>
-    <div class="legend" id="legend"></div>
+    <div class="node-selector" id="node-selector">
+      <div class="ns-header">
+        <span class="ns-title">Select Nodes for Analysis</span>
+        <div class="ns-actions">
+          <button onclick="selectAllNodes()">All</button>
+          <button onclick="clearSelection()">Clear</button>
+        </div>
+      </div>
+      <div class="ns-list" id="ns-list"></div>
+    </div>
   </div>
 
   <div class="resizer" id="resizer-left"></div>
@@ -812,25 +846,24 @@
       <button onclick="resetCamera()">Reset View</button>
       <button onclick="exportImage()">Export PNG</button>
     </div>
-    <div class="node-selected-indicator" id="select-indicator" style="display:none">
-      Click nodes to select | Shift+Click to multi-select
-    </div>
   </div>
 
-  <div class="resizer light" id="resizer-right"></div>
-  <div class="whiteboard-panel">
+  <div class="resizer" id="resizer-right"></div>
+  <div class="whiteboard-panel dark" id="wb-panel">
     <div class="wb-header">
-      <h2>WHITEBOARD</h2>
+      <h2 id="wb-title">BLACKBOARD</h2>
       <span class="wb-pattern-badge" id="wb-pattern-badge">No Selection</span>
+      <div style="flex:1"></div>
+      <button class="wb-theme-btn" id="wb-theme-btn" onclick="toggleBoardTheme()" title="Switch whiteboard/blackboard">
+        <span id="wb-theme-icon">&#9788;</span>
+      </button>
     </div>
     <div class="wb-toolbar">
       <span class="wb-count" id="wb-count">0 nodes selected</span>
-      <button onclick="selectAllNodes()">Select All</button>
-      <button onclick="clearSelection()">Clear</button>
-      <button onclick="exportWhiteboard()">Export PNG</button>
+      <button onclick="exportWhiteboard()">Export / Print</button>
     </div>
     <div class="wb-body" id="wb-body">
-      <div class="wb-empty">Click nodes in 3D view to build whiteboard summary</div>
+      <div class="wb-empty">Select nodes in the left panel to build analysis</div>
     </div>
     <div class="wb-footer" id="wb-footer">Strategic Canvas</div>
   </div>
@@ -872,7 +905,7 @@ fetch("graph_data.json")
 function init() {
   renderStats();
   renderConversation();
-  renderLegend();
+  renderNodeSelector();
   initGraph();
   setupSlider();
   initResizers();
@@ -1043,16 +1076,9 @@ function initGraph() {
       return group;
     })
 
-    // Interaction — click to select + show detail
+    // Interaction — click to show detail, selection is via left panel
     .onNodeClick(n => {
-      if (selectedNodes.has(n.id)) {
-        selectedNodes.delete(n.id);
-      } else {
-        selectedNodes.add(n.id);
-      }
       showDetail(n);
-      graphInstance.nodeThreeObject(graphInstance.nodeThreeObject()); // re-render nodes
-      renderWhiteboard();
     })
 
     // Initial camera
@@ -1114,6 +1140,7 @@ function setupSlider() {
 function updateGraph() {
   const data = getFilteredData(currentTurn);
   graphInstance.graphData(data);
+  renderNodeSelector();
 }
 
 function updateConversationHighlight() {
@@ -1150,45 +1177,53 @@ function renderConversation() {
   `).join("");
 }
 
-function renderLegend() {
-  const container = document.getElementById("legend");
-  const colors = {};
-  DATA.graph.nodes.forEach(n => {
-    colors[n.node_type] = n.color;
-    allNodeTypes.add(n.node_type);
+function renderNodeSelector() {
+  const container = document.getElementById("ns-list");
+  const data = getFilteredData(currentTurn);
+
+  // Group nodes by type
+  const groups = {};
+  data.nodes.forEach(n => {
+    if (!groups[n.node_type]) groups[n.node_type] = [];
+    groups[n.node_type].push(n);
   });
 
-  container.innerHTML = `
-    <div class="legend-title">Node Types (click to filter)</div>
-    <div class="legend-grid">
-      ${Object.entries(colors).map(([type, color]) => `
-        <div class="legend-item" data-type="${type}" onclick="toggleType('${type}')">
-          <span class="legend-dot" style="background:${color}"></span>
-          ${NODE_TYPE_LABELS[type] || type}
-        </div>
-      `).join("")}
-    </div>
-  `;
+  // Sort groups by a logical order
+  const typeOrder = ["goal","position","tension","option","action","resource","assumption","risk","signal","evidence","mechanism","stakeholder","constraint","pattern"];
+  const sortedTypes = typeOrder.filter(t => groups[t]);
+
+  let html = '';
+  sortedTypes.forEach(type => {
+    const nodes = groups[type];
+    const color = nodes[0].color;
+    html += `<div class="ns-group-label" style="color:${color}">${NODE_TYPE_LABELS[type] || type} (${nodes.length})</div>`;
+    nodes.forEach(n => {
+      const sel = selectedNodes.has(n.id) ? 'selected' : '';
+      const conf = Math.round((n.confidence || 0) * 100);
+      html += `<div class="ns-item ${sel}" data-id="${n.id}" onclick="toggleNodeSelection('${n.id}')">
+        <span class="ns-check">${sel ? '&#10003;' : ''}</span>
+        <span class="ns-dot" style="background:${n.color}"></span>
+        <span class="ns-label">${n.label}</span>
+        <span class="ns-conf">${conf}%</span>
+      </div>`;
+    });
+  });
+
+  container.innerHTML = html;
 }
 
-function toggleType(type) {
-  if (highlightedTypes.has(type)) {
-    highlightedTypes.delete(type);
+function toggleNodeSelection(nodeId) {
+  if (selectedNodes.has(nodeId)) {
+    selectedNodes.delete(nodeId);
   } else {
-    highlightedTypes.add(type);
+    selectedNodes.add(nodeId);
   }
-
-  // Update legend UI
-  document.querySelectorAll(".legend-item").forEach(el => {
-    if (highlightedTypes.size === 0) {
-      el.classList.remove("dimmed");
-    } else {
-      el.classList.toggle("dimmed", !highlightedTypes.has(el.dataset.type));
-    }
-  });
-
-  // Re-render graph to update colors
-  updateGraph();
+  // Update selector UI
+  renderNodeSelector();
+  // Update 3D selection rings
+  graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
+  // Update whiteboard
+  renderWhiteboard();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1269,6 +1304,32 @@ function setupResizer(resizerId, side) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Board Theme Toggle
+// ═══════════════════════════════════════════════════════════════
+
+let boardTheme = 'dark'; // default blackboard
+
+function toggleBoardTheme() {
+  const panel = document.getElementById("wb-panel");
+  const titleEl = document.getElementById("wb-title");
+  const iconEl = document.getElementById("wb-theme-icon");
+
+  if (boardTheme === 'dark') {
+    boardTheme = 'light';
+    panel.classList.remove('dark');
+    panel.classList.add('light');
+    titleEl.textContent = 'WHITEBOARD';
+    iconEl.innerHTML = '&#9790;'; // moon
+  } else {
+    boardTheme = 'dark';
+    panel.classList.remove('light');
+    panel.classList.add('dark');
+    titleEl.textContent = 'BLACKBOARD';
+    iconEl.innerHTML = '&#9788;'; // sun
+  }
+}
+
 function toggleRotate() {
   autoRotate = !autoRotate;
   graphInstance.controls().autoRotate = autoRotate;
@@ -1321,12 +1382,14 @@ function showEdgeDetail(link) {
 function selectAllNodes() {
   const data = getFilteredData(currentTurn);
   data.nodes.forEach(n => selectedNodes.add(n.id));
+  renderNodeSelector();
   graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
   renderWhiteboard();
 }
 
 function clearSelection() {
   selectedNodes.clear();
+  renderNodeSelector();
   graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
   renderWhiteboard();
 }
@@ -1472,7 +1535,7 @@ function renderWhiteboard() {
   const footerEl = document.getElementById("wb-footer");
 
   if (selectedNodes.size === 0) {
-    container.innerHTML = '<div class="wb-empty">Click nodes in 3D view to build whiteboard summary</div>';
+    container.innerHTML = '<div class="wb-empty">Select nodes in the left panel to build strategic analysis</div>';
     badge.textContent = "No Selection";
     countEl.textContent = "0 nodes selected";
     footerEl.textContent = "Strategic Canvas";
