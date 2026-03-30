@@ -18,25 +18,19 @@
   #app {
     display: flex;
     height: 100vh;
+    overflow: hidden;
   }
 
   /* ── 左侧对话面板 ──────────────────────────── */
   .sidebar {
-    width: 320px;
-    min-width: 320px;
+    flex: 1;
+    min-width: 200px;
     background: #111118;
-    border-right: 1px solid #222;
+    border-right: none;
     display: flex;
     flex-direction: column;
     z-index: 10;
-    transition: width 0.3s, min-width 0.3s;
     overflow: hidden;
-  }
-
-  .sidebar.collapsed {
-    width: 0 !important;
-    min-width: 0 !important;
-    border-right: none;
   }
 
   .sidebar-header {
@@ -174,7 +168,8 @@
 
   /* ── 3D 视图区域 ───────────────────────────── */
   .canvas-3d {
-    flex: 1;
+    flex: 3;
+    min-width: 300px;
     position: relative;
   }
 
@@ -326,57 +321,38 @@
 
   /* ── 右栏白板面板 ─────────────────────────── */
   .whiteboard-panel {
-    width: 400px;
-    min-width: 400px;
+    flex: 2;
+    min-width: 250px;
     background: #ffffff;
-    border-left: 1px solid #ddd;
+    border-left: none;
     display: flex;
     flex-direction: column;
     z-index: 10;
     color: #333;
-    transition: width 0.3s, min-width 0.3s;
     overflow: hidden;
   }
 
-  .whiteboard-panel.collapsed {
-    width: 0 !important;
-    min-width: 0 !important;
-    border-left: none;
-  }
-
-  /* ── 折叠按钮 ──────────────────────────────── */
-  .panel-toggle {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 48px;
-    background: rgba(30,30,44,0.9);
-    border: 1px solid #444;
-    color: #aaa;
-    font-size: 14px;
-    cursor: pointer;
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0 6px 6px 0;
+  /* ── 拖拽分隔条 ────────────────────────────── */
+  .resizer {
+    width: 5px;
+    cursor: col-resize;
+    background: #222;
+    flex-shrink: 0;
     transition: background 0.15s;
+    position: relative;
+    z-index: 15;
   }
 
-  .panel-toggle:hover {
-    background: rgba(50,50,70,0.95);
-    color: #fff;
+  .resizer:hover, .resizer.active {
+    background: #4A90D9;
   }
 
-  .panel-toggle.left {
-    left: 0;
-    border-radius: 0 6px 6px 0;
+  .resizer.light {
+    background: #ddd;
   }
 
-  .panel-toggle.right {
-    right: 0;
-    border-radius: 6px 0 0 6px;
+  .resizer.light:hover, .resizer.light.active {
+    background: #4A90D9;
   }
 
   .wb-header {
@@ -497,9 +473,8 @@
     <div class="legend" id="legend"></div>
   </div>
 
+  <div class="resizer" id="resizer-left"></div>
   <div class="canvas-3d">
-    <button class="panel-toggle left" id="toggle-left" onclick="togglePanel('left')">&lsaquo;</button>
-    <button class="panel-toggle right" id="toggle-right" onclick="togglePanel('right')">&rsaquo;</button>
     <div id="graph-container"></div>
 
     <div class="node-detail" id="node-detail">
@@ -526,6 +501,7 @@
     </div>
   </div>
 
+  <div class="resizer light" id="resizer-right"></div>
   <div class="whiteboard-panel">
     <div class="wb-header">
       <h2>WHITEBOARD</h2>
@@ -583,6 +559,7 @@ function init() {
   renderLegend();
   initGraph();
   setupSlider();
+  initResizers();
   // Force 3D graph to resize for 3-panel layout
   setTimeout(() => {
     const c = document.getElementById("graph-container");
@@ -917,22 +894,49 @@ function hideDetail() {
 // Controls
 // ═══════════════════════════════════════════════════════════════
 
-function togglePanel(side) {
-  const el = side === 'left'
-    ? document.querySelector('.sidebar')
-    : document.querySelector('.whiteboard-panel');
-  const btn = document.getElementById(side === 'left' ? 'toggle-left' : 'toggle-right');
-  el.classList.toggle('collapsed');
-  if (side === 'left') {
-    btn.innerHTML = el.classList.contains('collapsed') ? '&rsaquo;' : '&lsaquo;';
-  } else {
-    btn.innerHTML = el.classList.contains('collapsed') ? '&lsaquo;' : '&rsaquo;';
-  }
-  // Resize 3D graph after panel animation
-  setTimeout(() => {
-    const c = document.getElementById("graph-container");
-    graphInstance.width(c.clientWidth).height(c.clientHeight);
-  }, 350);
+function initResizers() {
+  setupResizer('resizer-left', 'left');
+  setupResizer('resizer-right', 'right');
+}
+
+function setupResizer(resizerId, side) {
+  const resizer = document.getElementById(resizerId);
+  const sidebar = document.querySelector('.sidebar');
+  const wb = document.querySelector('.whiteboard-panel');
+
+  let startX, startW;
+
+  resizer.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const panel = side === 'left' ? sidebar : wb;
+    startX = e.clientX;
+    startW = panel.getBoundingClientRect().width;
+    resizer.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = ev => {
+      const dx = ev.clientX - startX;
+      const newW = side === 'left' ? startW + dx : startW - dx;
+      const clamped = Math.max(200, Math.min(600, newW));
+      panel.style.flex = 'none';
+      panel.style.width = clamped + 'px';
+    };
+
+    const onUp = () => {
+      resizer.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      // Resize 3D graph
+      const c = document.getElementById("graph-container");
+      if (graphInstance) graphInstance.width(c.clientWidth).height(c.clientHeight);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
 }
 
 function toggleRotate() {
