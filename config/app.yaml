@@ -1,0 +1,8 @@
+llm:
+  model: "claude-sonnet-4-5-20250514"
+  router_model: "claude-sonnet-4-5-20250514"
+  # api_key: 通过环境变量 ANTHROPIC_API_KEY 设置
+
+skills_dir: "skills"
+store_path: "store"
+max_turns: 50
