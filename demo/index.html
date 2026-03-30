@@ -22,8 +22,8 @@
 
   /* ── 左侧对话面板 ──────────────────────────── */
   .sidebar {
-    width: 380px;
-    min-width: 380px;
+    width: 320px;
+    min-width: 320px;
     background: #111118;
     border-right: 1px solid #222;
     display: flex;
@@ -315,6 +315,122 @@
     color: #4A90D9;
     min-width: 60px;
   }
+
+  /* ── 右栏白板面板 ─────────────────────────── */
+  .whiteboard-panel {
+    width: 400px;
+    min-width: 400px;
+    background: #ffffff;
+    border-left: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    color: #333;
+  }
+
+  .wb-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wb-header h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: 0.5px;
+  }
+
+  .wb-pattern-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #e8f0fe;
+    color: #1a73e8;
+    font-weight: 600;
+  }
+
+  .wb-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #eee;
+    font-size: 11px;
+    color: #666;
+    flex-wrap: wrap;
+  }
+
+  .wb-toolbar .wb-count {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .wb-toolbar button {
+    padding: 4px 10px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .wb-toolbar button:hover {
+    background: #e8e8e8;
+    border-color: #bbb;
+  }
+
+  .wb-svg-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #fff;
+  }
+
+  .wb-svg-container::-webkit-scrollbar { width: 4px; }
+  .wb-svg-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+  .wb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+    font-size: 13px;
+    text-align: center;
+    padding: 40px;
+    line-height: 1.6;
+  }
+
+  .wb-conclusion {
+    padding: 10px 16px;
+    border-top: 1px solid #eee;
+    font-size: 12px;
+    color: #555;
+    font-style: italic;
+    min-height: 38px;
+  }
+
+  /* ── 节点选中高亮指示 ─────────────────────── */
+  .node-selected-indicator {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17,17,24,0.9);
+    border: 1px solid #4A90D9;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: #4A90D9;
+    z-index: 20;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+  }
 </style>
 </head>
 <body>
@@ -352,6 +468,26 @@
       <button onclick="resetCamera()">Reset View</button>
       <button onclick="exportImage()">Export PNG</button>
     </div>
+    <div class="node-selected-indicator" id="select-indicator" style="display:none">
+      Click nodes to select | Shift+Click to multi-select
+    </div>
+  </div>
+
+  <div class="whiteboard-panel">
+    <div class="wb-header">
+      <h2>WHITEBOARD</h2>
+      <span class="wb-pattern-badge" id="wb-pattern-badge">No Selection</span>
+    </div>
+    <div class="wb-toolbar">
+      <span class="wb-count" id="wb-count">0 nodes selected</span>
+      <button onclick="selectAllNodes()">Select All</button>
+      <button onclick="clearSelection()">Clear</button>
+      <button onclick="exportWhiteboard()">Export PNG</button>
+    </div>
+    <div class="wb-svg-container" id="wb-svg-container">
+      <div class="wb-empty">Click nodes in 3D view to build whiteboard summary</div>
+    </div>
+    <div class="wb-conclusion" id="wb-conclusion"></div>
   </div>
 </div>
 
@@ -369,6 +505,7 @@ let currentTurn = 6;
 let autoRotate = true;
 let highlightedTypes = new Set();
 let allNodeTypes = new Set();
+let selectedNodes = new Set();
 
 const NODE_TYPE_LABELS = {
   goal: "Goal", position: "Position", option: "Option",
@@ -393,6 +530,11 @@ function init() {
   renderLegend();
   initGraph();
   setupSlider();
+  // Force 3D graph to resize for 3-panel layout
+  setTimeout(() => {
+    const c = document.getElementById("graph-container");
+    graphInstance.width(c.clientWidth).height(c.clientHeight);
+  }, 100);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -467,7 +609,15 @@ function initGraph() {
     .linkDirectionalParticleWidth(1.5)
     .linkDirectionalParticleColor(l => l.color)
 
-    // Custom 3D node objects with glow
+    // Edge hover labels
+    .linkLabel(l => `<div style="background:rgba(0,0,0,0.85);padding:5px 10px;border-radius:4px;font-size:11px;color:#fff;border:1px solid ${l.color || '#666'};max-width:220px">
+      <div style="font-size:9px;color:${l.color || '#888'};text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">${l.edge_type || ''}</div>
+      <div>${l.label || ''}</div>
+      <div style="font-size:10px;color:#888;margin-top:2px">strength: ${Math.round((l.strength || 0) * 100)}%</div>
+    </div>`)
+    .onLinkClick(l => showEdgeDetail(l))
+
+    // Custom 3D node objects with glow + selection
     .nodeThreeObject(n => {
       const T = THREE;
       const group = new T.Group();
@@ -505,6 +655,15 @@ function initGraph() {
       glow.scale.set(size * 5, size * 5, 1);
       group.add(glow);
 
+      // Selection ring
+      if (selectedNodes.has(n.id)) {
+        const ringGeo = new T.SphereGeometry(size * 1.5, 16, 16);
+        const ringMat = new T.MeshBasicMaterial({
+          color: '#ffffff', wireframe: true, transparent: true, opacity: 0.35,
+        });
+        group.add(new T.Mesh(ringGeo, ringMat));
+      }
+
       // Text label
       const cvs = document.createElement("canvas");
       const ctx = cvs.getContext("2d");
@@ -524,8 +683,17 @@ function initGraph() {
       return group;
     })
 
-    // Interaction
-    .onNodeClick(n => showDetail(n))
+    // Interaction — click to select + show detail
+    .onNodeClick(n => {
+      if (selectedNodes.has(n.id)) {
+        selectedNodes.delete(n.id);
+      } else {
+        selectedNodes.add(n.id);
+      }
+      showDetail(n);
+      graphInstance.nodeThreeObject(graphInstance.nodeThreeObject()); // re-render nodes
+      renderWhiteboard();
+    })
 
     // Initial camera
     .cameraPosition({ x: 300, y: 200, z: 400 });
@@ -713,6 +881,468 @@ function exportImage() {
   link.download = `strategic-canvas-turn-${currentTurn}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Edge Detail
+// ═══════════════════════════════════════════════════════════════
+
+function showEdgeDetail(link) {
+  const panel = document.getElementById("node-detail");
+  const typeEl = document.getElementById("detail-type");
+  const labelEl = document.getElementById("detail-label");
+  const contentEl = document.getElementById("detail-content");
+  const metaEl = document.getElementById("detail-meta");
+
+  const srcNode = typeof link.source === "object" ? link.source : DATA.graph.nodes.find(n => n.id === link.source);
+  const tgtNode = typeof link.target === "object" ? link.target : DATA.graph.nodes.find(n => n.id === link.target);
+
+  typeEl.textContent = (link.edge_type || "EDGE").toUpperCase();
+  typeEl.style.background = (link.color || "#666") + "22";
+  typeEl.style.color = link.color || "#666";
+  labelEl.textContent = link.label || "Relationship";
+  contentEl.textContent = `${srcNode?.label || '?'} → ${tgtNode?.label || '?'}`;
+  metaEl.innerHTML = `
+    <span>Strength: ${Math.round((link.strength || 0) * 100)}%</span>
+    <span>Type: ${link.edge_type || 'unknown'}</span>
+  `;
+  panel.classList.add("visible");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Node Selection Controls
+// ═══════════════════════════════════════════════════════════════
+
+function selectAllNodes() {
+  const data = getFilteredData(currentTurn);
+  data.nodes.forEach(n => selectedNodes.add(n.id));
+  graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
+  renderWhiteboard();
+}
+
+function clearSelection() {
+  selectedNodes.clear();
+  graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
+  renderWhiteboard();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Whiteboard Rendering
+// ═══════════════════════════════════════════════════════════════
+
+const WB = { W: 368, PAD: 16, BW: 140, BH: 50, RX: 6, FS: 11, TFS: 9 };
+
+const PATTERN_LABELS = {
+  full_synthesis: "Full Synthesis", decision_fork: "Decision Fork",
+  assumption_stack: "Assumption Stack", action_roadmap: "Action Roadmap",
+  risk_radar: "Risk Radar", resource_map: "Resource Map",
+};
+
+const SYNTH_LAYERS = [
+  ["goal"],
+  ["position", "pattern"],
+  ["action", "mechanism"],
+  ["resource", "stakeholder"],
+  ["assumption", "signal", "evidence"],
+  ["risk", "tension", "constraint", "option"],
+];
+
+function getSelectedNodesData() {
+  return DATA.graph.nodes.filter(n => selectedNodes.has(n.id));
+}
+
+function getSelectedEdges() {
+  return DATA.graph.links.filter(l => {
+    const sid = typeof l.source === "object" ? l.source.id : l.source;
+    const tid = typeof l.target === "object" ? l.target.id : l.target;
+    return selectedNodes.has(sid) && selectedNodes.has(tid);
+  });
+}
+
+function detectPattern() {
+  const nodes = getSelectedNodesData();
+  const edges = getSelectedEdges();
+  const types = new Set(nodes.map(n => n.node_type));
+  const eTypes = new Set(edges.map(e => e.edge_type));
+  if (types.size >= 6) return "full_synthesis";
+  if (types.has("tension") && types.has("option")) return "decision_fork";
+  if (types.has("assumption") && (types.has("signal") || eTypes.has("validates"))) return "assumption_stack";
+  if (types.has("action") && eTypes.has("depends_on")) return "action_roadmap";
+  if (types.has("risk") && (eTypes.has("amplifies") || eTypes.has("mitigates"))) return "risk_radar";
+  if (types.has("resource") && eTypes.has("enables")) return "resource_map";
+  return "full_synthesis";
+}
+
+function renderWhiteboard() {
+  const container = document.getElementById("wb-svg-container");
+  const badge = document.getElementById("wb-pattern-badge");
+  const countEl = document.getElementById("wb-count");
+  const conclEl = document.getElementById("wb-conclusion");
+
+  if (selectedNodes.size === 0) {
+    container.innerHTML = '<div class="wb-empty">Click nodes in 3D view to build whiteboard summary</div>';
+    badge.textContent = "No Selection";
+    countEl.textContent = "0 nodes selected";
+    conclEl.textContent = "";
+    return;
+  }
+
+  const nodes = getSelectedNodesData();
+  const edges = getSelectedEdges();
+  const pattern = detectPattern();
+
+  countEl.textContent = `${nodes.length} nodes, ${edges.length} edges`;
+  badge.textContent = PATTERN_LABELS[pattern] || pattern;
+
+  let svg, conclusion;
+  switch (pattern) {
+    case "decision_fork": [svg, conclusion] = renderDecisionFork(nodes, edges); break;
+    case "assumption_stack": [svg, conclusion] = renderAssumptionStack(nodes, edges); break;
+    case "action_roadmap": [svg, conclusion] = renderActionRoadmap(nodes, edges); break;
+    case "risk_radar": [svg, conclusion] = renderRiskRadar(nodes, edges); break;
+    case "resource_map": [svg, conclusion] = renderResourceMap(nodes, edges); break;
+    default: [svg, conclusion] = renderFullSynthesis(nodes, edges);
+  }
+
+  container.innerHTML = svg;
+  conclEl.textContent = conclusion;
+}
+
+// ── SVG Primitives ──────────────────────────────────────────
+
+function svgDefs() {
+  const colors = ["#4CAF50","#F44336","#2196F3","#FF5722","#9E9E9E","#00BCD4","#AB47BC","#FF9800","#8BC34A","#E91E63","#3F51B5","#FF5252","#7C4DFF","#607D8B","#666"];
+  return `<defs>${colors.map(c =>
+    `<marker id="ah-${c.slice(1)}" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="${c}"/>
+    </marker>`
+  ).join("")}</defs>`;
+}
+
+function svgBox(x, y, node, w, h) {
+  w = w || WB.BW; h = h || WB.BH;
+  const c = node.color || "#999";
+  const conf = Math.round((node.confidence || 0) * 100);
+  const confColor = conf >= 70 ? "#4CAF50" : conf >= 40 ? "#FF9800" : "#F44336";
+  const label = truncate(node.label || "", 14);
+  const typeLabel = (node.node_type || "").toUpperCase();
+  return `<g transform="translate(${x},${y})">
+    <rect width="${w}" height="${h}" rx="${WB.RX}" fill="#fff" stroke="${c}" stroke-width="2"/>
+    <text x="8" y="15" font-size="${WB.TFS}" font-family="sans-serif" font-weight="700" fill="${c}" letter-spacing="0.5">${typeLabel}</text>
+    <text x="8" y="33" font-size="${WB.FS}" font-family="sans-serif" fill="#333">${label}</text>
+    <circle cx="${w - 12}" cy="12" r="5" fill="${confColor}"/>
+    <text x="${w - 12}" y="15" font-size="7" font-family="sans-serif" fill="#fff" text-anchor="middle">${conf}</text>
+  </g>`;
+}
+
+function svgArrow(x1, y1, x2, y2, label, color) {
+  color = color || "#999";
+  const mid = `ah-${color.slice(1)}`;
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  let svg = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.5" marker-end="url(#${mid})"/>`;
+  if (label) {
+    svg += `<rect x="${mx - 40}" y="${my - 8}" width="80" height="14" rx="2" fill="#fff" stroke="#eee" stroke-width="0.5"/>`;
+    svg += `<text x="${mx}" y="${my + 3}" font-size="8" font-family="sans-serif" fill="#666" text-anchor="middle">${truncate(label, 14)}</text>`;
+  }
+  return svg;
+}
+
+function svgCurve(x1, y1, x2, y2, label, color) {
+  color = color || "#999";
+  const mid = `ah-${color.slice(1)}`;
+  const cx = (x1 + x2) / 2 + (Math.random() - 0.5) * 30;
+  const cy = (y1 + y2) / 2;
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  let svg = `<path d="M${x1},${y1} Q${cx},${cy} ${x2},${y2}" fill="none" stroke="${color}" stroke-width="1.2" stroke-opacity="0.6" marker-end="url(#${mid})"/>`;
+  if (label) {
+    svg += `<text x="${mx}" y="${my - 4}" font-size="7" font-family="sans-serif" fill="#888" text-anchor="middle">${truncate(label, 12)}</text>`;
+  }
+  return svg;
+}
+
+function svgTitle(text, y) {
+  return `<text x="${WB.W/2}" y="${y || 20}" font-size="14" font-family="sans-serif" font-weight="700" fill="#111" text-anchor="middle">${text}</text>`;
+}
+
+function svgSubtitle(text, y) {
+  return `<text x="${WB.W/2}" y="${y || 36}" font-size="10" font-family="sans-serif" fill="#888" text-anchor="middle">${text}</text>`;
+}
+
+function wrapSvg(content, height) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" id="wb-svg" viewBox="0 0 ${WB.W} ${height}" width="${WB.W}" style="background:#fff">
+    ${svgDefs()}${content}</svg>`;
+}
+
+// ── Layout A: Decision Fork ─────────────────────────────────
+
+function renderDecisionFork(nodes, edges) {
+  const tensions = nodes.filter(n => n.node_type === "tension");
+  const options = nodes.filter(n => n.node_type === "option");
+  const others = nodes.filter(n => n.node_type !== "tension" && n.node_type !== "option");
+  const t = tensions[0] || options[0];
+  const opts = options.length ? options : others.slice(0, 2);
+  let svg = "", y = 10;
+
+  svg += svgTitle("Decision Fork", y + 16); y += 36;
+  if (t) {
+    const tx = (WB.W - WB.BW) / 2;
+    svg += svgBox(tx, y, t); y += WB.BH + 30;
+
+    opts.forEach((o, i) => {
+      const ox = (WB.W / (opts.length + 1)) * (i + 1) - WB.BW / 2;
+      svg += svgBox(ox, y, o);
+      const edge = edges.find(e => relatesToBoth(e, t.id, o.id));
+      svg += svgArrow(WB.W / 2, y - 30 + WB.BH, ox + WB.BW / 2, y, edge?.label || "", edge?.color || "#9E9E9E");
+    });
+    y += WB.BH + 30;
+  }
+
+  others.forEach((n, i) => {
+    const ox = (WB.W / (others.length + 1)) * (i + 1) - WB.BW / 2;
+    svg += svgBox(ox, y, n);
+    const edge = edges.find(e => involvesNode(e, n.id));
+    if (edge) {
+      const tgtOpt = opts.find(o => involvesNode(edge, o.id));
+      if (tgtOpt) {
+        const ti = opts.indexOf(tgtOpt);
+        const tgtX = (WB.W / (opts.length + 1)) * (ti + 1);
+        svg += svgArrow(ox + WB.BW / 2, y, tgtX, y - 30, edge.label || "", edge.color || "#999");
+      }
+    }
+  });
+  y += WB.BH + 20;
+
+  const concl = `Core tension: ${t?.label || "?"}, with ${opts.length} options`;
+  return [wrapSvg(svg, y), concl];
+}
+
+// ── Layout B: Assumption Stack ──────────────────────────────
+
+function renderAssumptionStack(nodes, edges) {
+  const assumptions = nodes.filter(n => n.node_type === "assumption");
+  const signals = nodes.filter(n => n.node_type === "signal");
+  const others = nodes.filter(n => n.node_type !== "assumption" && n.node_type !== "signal");
+  let svg = "", y = 10;
+
+  svg += svgTitle("Assumption Validation", y + 16); y += 40;
+
+  const rows = Math.max(assumptions.length, signals.length, 1);
+  for (let i = 0; i < rows; i++) {
+    const a = assumptions[i];
+    const s = signals[i];
+    if (a) svg += svgBox(WB.PAD, y, a);
+    if (s) svg += svgBox(WB.W - WB.PAD - WB.BW, y, s);
+    if (a && s) {
+      const edge = edges.find(e => relatesToBoth(e, a.id, s.id));
+      svg += svgArrow(WB.W - WB.PAD - WB.BW, y + WB.BH / 2, WB.PAD + WB.BW, y + WB.BH / 2, edge?.label || "validates", edge?.color || "#00BCD4");
+    }
+    y += WB.BH + 20;
+  }
+
+  others.forEach((n, i) => {
+    svg += svgBox((WB.W - WB.BW) / 2, y, n);
+    y += WB.BH + 15;
+  });
+  y += 10;
+
+  const concl = `${assumptions.length} key assumptions, ${signals.length} validation signals`;
+  return [wrapSvg(svg, y), concl];
+}
+
+// ── Layout C: Action Roadmap ────────────────────────────────
+
+function renderActionRoadmap(nodes, edges) {
+  const actions = nodes.filter(n => n.node_type === "action");
+  const others = nodes.filter(n => n.node_type !== "action");
+  let svg = "", y = 10;
+  const smallW = 110;
+
+  svg += svgTitle("Action Roadmap", y + 16); y += 40;
+
+  // Simple left-to-right
+  actions.forEach((a, i) => {
+    const x = WB.PAD + i * (smallW + 30);
+    if (x + smallW > WB.W) { y += WB.BH + 30; }
+    const ax = WB.PAD + (i % 2) * (smallW + 30);
+    svg += svgBox(ax, y, a, smallW, WB.BH);
+    if (i < actions.length - 1) {
+      svg += svgArrow(ax + smallW, y + WB.BH / 2, ax + smallW + 30, y + WB.BH / 2, "", "#9E9E9E");
+    }
+  });
+  y += WB.BH + 30;
+
+  others.forEach((n) => {
+    svg += svgBox((WB.W - WB.BW) / 2, y, n);
+    y += WB.BH + 15;
+  });
+  y += 10;
+
+  const concl = `${actions.length} steps. First: ${actions[0]?.label || '?'}`;
+  return [wrapSvg(svg, y), concl];
+}
+
+// ── Layout D: Risk Radar ────────────────────────────────────
+
+function renderRiskRadar(nodes, edges) {
+  const risks = nodes.filter(n => n.node_type === "risk");
+  const mitigators = [];
+  const amplifiers = [];
+  const others = nodes.filter(n => n.node_type !== "risk");
+
+  others.forEach(n => {
+    const e = edges.find(e => involvesNode(e, n.id) && e.edge_type === "mitigates");
+    if (e) { mitigators.push(n); return; }
+    const e2 = edges.find(e => involvesNode(e, n.id) && e.edge_type === "amplifies");
+    if (e2) { amplifiers.push(n); return; }
+    mitigators.push(n); // default to mitigator side
+  });
+
+  let svg = "", y = 10;
+  svg += svgTitle("Risk Analysis", y + 16); y += 40;
+
+  const centerX = (WB.W - WB.BW) / 2;
+  risks.forEach((r, i) => {
+    const ry = y + i * (WB.BH + 60);
+    svg += svgBox(centerX, ry, r);
+
+    amplifiers.forEach((a, j) => {
+      const ay = ry + (j - amplifiers.length / 2) * 55;
+      svg += svgBox(WB.PAD, Math.max(y, ay), a, 100, 40);
+      svg += svgArrow(WB.PAD + 100, Math.max(y, ay) + 20, centerX, ry + WB.BH / 2, "amplifies", "#E91E63");
+    });
+
+    mitigators.forEach((m, j) => {
+      const my = ry + (j - mitigators.length / 2) * 55;
+      svg += svgBox(WB.W - WB.PAD - 100, Math.max(y, my), m, 100, 40);
+      svg += svgArrow(WB.W - WB.PAD - 100, Math.max(y, my) + 20, centerX + WB.BW, ry + WB.BH / 2, "mitigates", "#8BC34A");
+    });
+  });
+
+  y += risks.length * (WB.BH + 60) + Math.max(amplifiers.length, mitigators.length) * 30;
+  const concl = `${risks.length} risks identified, ${mitigators.length} mitigations`;
+  return [wrapSvg(svg, Math.max(y, 200)), concl];
+}
+
+// ── Layout E: Resource Map ──────────────────────────────────
+
+function renderResourceMap(nodes, edges) {
+  const resources = nodes.filter(n => n.node_type === "resource");
+  const targets = nodes.filter(n => n.node_type !== "resource");
+  let svg = "", y = 10;
+
+  svg += svgTitle("Resource Map", y + 16); y += 40;
+
+  const rows = Math.max(resources.length, targets.length, 1);
+  for (let i = 0; i < rows; i++) {
+    const r = resources[i];
+    const t = targets[i];
+    if (r) svg += svgBox(WB.PAD, y, r);
+    if (t) svg += svgBox(WB.W - WB.PAD - WB.BW, y, t);
+    if (r && t) {
+      const edge = edges.find(e => relatesToBoth(e, r.id, t.id));
+      svg += svgArrow(WB.PAD + WB.BW, y + WB.BH / 2, WB.W - WB.PAD - WB.BW, y + WB.BH / 2, edge?.label || "enables", edge?.color || "#2196F3");
+    }
+    y += WB.BH + 20;
+  }
+  y += 10;
+
+  const concl = `${resources.length} resources enabling ${targets.length} targets`;
+  return [wrapSvg(svg, y), concl];
+}
+
+// ── Layout F: Full Synthesis ────────────────────────────────
+
+function renderFullSynthesis(nodes, edges) {
+  let svg = "", y = 10;
+  const smallW = 105, smallH = 44;
+
+  svg += svgTitle("Strategic Synthesis", y + 16);
+  svg += svgSubtitle(`${nodes.length} elements \u00b7 ${edges.length} relationships`, y + 32);
+  y += 46;
+
+  const nodePositions = {}; // id -> {cx, cy}
+
+  SYNTH_LAYERS.forEach(layerTypes => {
+    const layerNodes = nodes.filter(n => layerTypes.includes(n.node_type))
+      .sort((a, b) => (b.weight || 1) - (a.weight || 1));
+    if (layerNodes.length === 0) return;
+
+    layerNodes.forEach((n, i) => {
+      const x = (WB.W / (layerNodes.length + 1)) * (i + 1) - smallW / 2;
+      svg += svgBox(x, y, n, smallW, smallH);
+      nodePositions[n.id] = { cx: x + smallW / 2, cy: y + smallH / 2, top: y, bot: y + smallH };
+    });
+    y += smallH + 24;
+  });
+
+  // Draw edges as curves
+  edges.forEach(e => {
+    const sid = typeof e.source === "object" ? e.source.id : e.source;
+    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sp = nodePositions[sid], tp = nodePositions[tid];
+    if (!sp || !tp) return;
+    const fromY = sp.cy < tp.cy ? sp.bot : sp.top;
+    const toY = sp.cy < tp.cy ? tp.top : tp.bot;
+    svg += svgCurve(sp.cx, fromY, tp.cx, toY, e.label, e.color);
+  });
+
+  y += 10;
+
+  // Conclusion
+  const goal = nodes.find(n => n.node_type === "goal");
+  const avgConf = Math.round(nodes.reduce((s, n) => s + (n.confidence || 0), 0) / nodes.length * 100);
+  const concl = goal
+    ? `Goal: ${goal.label} \u00b7 Confidence: ${avgConf}%`
+    : `${nodes.length} strategic elements analyzed \u00b7 Avg confidence: ${avgConf}%`;
+  return [wrapSvg(svg, y), concl];
+}
+
+// ── Edge helpers ────────────────────────────────────────────
+
+function involvesNode(edge, nodeId) {
+  const s = typeof edge.source === "object" ? edge.source.id : edge.source;
+  const t = typeof edge.target === "object" ? edge.target.id : edge.target;
+  return s === nodeId || t === nodeId;
+}
+
+function relatesToBoth(edge, id1, id2) {
+  const s = typeof edge.source === "object" ? edge.source.id : edge.source;
+  const t = typeof edge.target === "object" ? edge.target.id : edge.target;
+  return (s === id1 && t === id2) || (s === id2 && t === id1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Whiteboard Export
+// ═══════════════════════════════════════════════════════════════
+
+function exportWhiteboard() {
+  const svgEl = document.getElementById("wb-svg");
+  if (!svgEl) { alert("No whiteboard content to export"); return; }
+
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(svgEl);
+  const canvas = document.createElement("canvas");
+  const bbox = svgEl.getBoundingClientRect();
+  canvas.width = bbox.width * 2;
+  canvas.height = bbox.height * 2;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(2, 2);
+
+  const img = new Image();
+  const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  img.onload = () => {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, bbox.width, bbox.height);
+    URL.revokeObjectURL(url);
+    const link = document.createElement("a");
+    link.download = "whiteboard-summary.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+  img.src = url;
 }
 </script>
 
