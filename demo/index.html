@@ -23,19 +23,19 @@
   /* ── 左侧对话面板 ──────────────────────────── */
   .sidebar {
     width: 320px;
-    min-width: 0;
+    min-width: 320px;
     background: #111118;
     border-right: 1px solid #222;
     display: flex;
     flex-direction: column;
     z-index: 10;
-    transition: width 0.3s, min-width 0.3s, padding 0.3s;
+    transition: width 0.3s, min-width 0.3s;
     overflow: hidden;
   }
 
   .sidebar.collapsed {
-    width: 0;
-    min-width: 0;
+    width: 0 !important;
+    min-width: 0 !important;
     border-right: none;
   }
 
@@ -327,7 +327,7 @@
   /* ── 右栏白板面板 ─────────────────────────── */
   .whiteboard-panel {
     width: 400px;
-    min-width: 0;
+    min-width: 400px;
     background: #ffffff;
     border-left: 1px solid #ddd;
     display: flex;
@@ -339,8 +339,8 @@
   }
 
   .whiteboard-panel.collapsed {
-    width: 0;
-    min-width: 0;
+    width: 0 !important;
+    min-width: 0 !important;
     border-left: none;
   }
 
