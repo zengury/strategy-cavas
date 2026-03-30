@@ -355,8 +355,9 @@
   </div>
 </div>
 
-<!-- 3D Force Graph (UMD build from CDN) -->
-<script src="https://unpkg.com/3d-force-graph@1"></script>
+<!-- Three.js + 3D Force Graph -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 // Data Loading & State
@@ -382,8 +383,9 @@ fetch("graph_data.json")
   .then(r => r.json())
   .then(data => {
     DATA = data;
-    init();
-  });
+    try { init(); } catch(e) { console.error("Init error:", e); alert("Init error: " + e.message); }
+  })
+  .catch(e => { console.error("Data load error:", e); alert("Failed to load graph_data.json"); });
 
 function init() {
   renderStats();
@@ -465,11 +467,12 @@ function initGraph() {
     .linkDirectionalParticleWidth(1.5)
     .linkDirectionalParticleColor(l => l.color)
 
-    // Node glow (use Three.js Sprite for glow effect)
+    // Custom 3D node objects with glow
     .nodeThreeObject(n => {
-      const group = new THREE.Group();
+      const T = THREE;
+      const group = new T.Group();
 
-      // Sphere
+      // Calculate size from connections
       const linkCount = data.links.filter(
         l => (l.source === n.id || l.source?.id === n.id ||
               l.target === n.id || l.target?.id === n.id)
@@ -478,50 +481,45 @@ function initGraph() {
       const color = (highlightedTypes.size > 0 && !highlightedTypes.has(n.node_type))
         ? "#222" : n.color;
 
-      const geometry = new THREE.SphereGeometry(size, 16, 16);
-      const material = new THREE.MeshPhongMaterial({
+      // Glowing sphere
+      const geo = new T.SphereGeometry(size, 16, 16);
+      const mat = new T.MeshLambertMaterial({
         color: color,
         emissive: color,
         emissiveIntensity: n.confidence * 0.6,
         transparent: true,
         opacity: 0.9,
       });
-      const sphere = new THREE.Mesh(geometry, material);
-      group.add(sphere);
+      group.add(new T.Mesh(geo, mat));
 
-      // Glow sprite
-      const spriteMaterial = new THREE.SpriteMaterial({
-        map: createGlowTexture(),
+      // Glow halo
+      const glowTex = getGlowTexture();
+      const glowMat = new T.SpriteMaterial({
+        map: glowTex,
         color: color,
         transparent: true,
-        opacity: n.confidence * 0.3,
-        blending: THREE.AdditiveBlending,
+        opacity: n.confidence * 0.35,
+        blending: T.AdditiveBlending,
       });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(size * 4, size * 4, 1);
-      group.add(sprite);
+      const glow = new T.Sprite(glowMat);
+      glow.scale.set(size * 5, size * 5, 1);
+      group.add(glow);
 
-      // Label
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = 256;
-      canvas.height = 64;
-      ctx.fillStyle = "rgba(0,0,0,0)";
-      ctx.fillRect(0, 0, 256, 64);
-      ctx.font = "bold 20px -apple-system, sans-serif";
+      // Text label
+      const cvs = document.createElement("canvas");
+      const ctx = cvs.getContext("2d");
+      cvs.width = 256; cvs.height = 64;
+      ctx.font = "bold 20px sans-serif";
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
-      ctx.fillText(truncate(n.label, 18), 128, 36);
-      const texture = new THREE.CanvasTexture(canvas);
-      const labelMaterial = new THREE.SpriteMaterial({
-        map: texture,
-        transparent: true,
-        opacity: 0.85,
-      });
-      const labelSprite = new THREE.Sprite(labelMaterial);
-      labelSprite.scale.set(30, 7.5, 1);
-      labelSprite.position.set(0, size + 6, 0);
-      group.add(labelSprite);
+      ctx.textBaseline = "middle";
+      ctx.fillText(truncate(n.label, 16), 128, 32);
+      const tex = new T.CanvasTexture(cvs);
+      const lblMat = new T.SpriteMaterial({ map: tex, transparent: true, opacity: 0.85 });
+      const lbl = new T.Sprite(lblMat);
+      lbl.scale.set(28, 7, 1);
+      lbl.position.set(0, size + 5, 0);
+      group.add(lbl);
 
       return group;
     })
@@ -530,11 +528,10 @@ function initGraph() {
     .onNodeClick(n => showDetail(n))
 
     // Initial camera
-    .cameraPosition({ x: 300, y: 200, z: 400 })
+    .cameraPosition({ x: 300, y: 200, z: 400 });
 
-    // Force config — use semantic positions as initial but allow force to settle
-    .d3Force("charge").strength(-120);
-
+  // Force config
+  graphInstance.d3Force("charge").strength(-120);
   graphInstance.d3Force("link").distance(l => (1 - l.strength) * 80 + 30);
 
   // Enable auto-rotate
@@ -551,21 +548,20 @@ function initGraph() {
 
 // Glow texture (cached)
 let _glowTexture = null;
-function createGlowTexture() {
+function getGlowTexture() {
   if (_glowTexture) return _glowTexture;
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-  gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.2, "rgba(255,255,255,0.5)");
-  gradient.addColorStop(0.5, "rgba(255,255,255,0.1)");
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-  _glowTexture = new THREE.CanvasTexture(canvas);
+  const s = 128;
+  const cvs = document.createElement("canvas");
+  cvs.width = s; cvs.height = s;
+  const ctx = cvs.getContext("2d");
+  const g = ctx.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.2, "rgba(255,255,255,0.5)");
+  g.addColorStop(0.5, "rgba(255,255,255,0.1)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, s, s);
+  _glowTexture = new THREE.CanvasTexture(cvs);
   return _glowTexture;
 }
 
