@@ -182,6 +182,7 @@ class GraphNode:
     source_evidence: str = ""          # 来源证据
     source_skill: str = ""             # 生成此节点的 skill
     confidence: float = 0.8
+    weight: float = 1.0                # 重要性权重 0~2（影响节点大小和排序）
     locked: bool = False
     status: str = "active"             # "active" | "invalidated" | "superseded"
     # 3D 坐标（由空间引擎计算）
@@ -204,6 +205,7 @@ class GraphNode:
             "locked": self.locked,
             "status": self.status,
             "x": self.x, "y": self.y, "z": self.z,
+            "weight": self.weight,
             "color": NODE_COLORS.get(self.node_type, "#999999"),
             "created_at": self.created_at,
             "updated_at": self.updated_at,

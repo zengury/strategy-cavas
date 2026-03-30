@@ -45,7 +45,7 @@ n_tension_1 = GraphNode(
     content="在大厂做到技术总监，但感觉增长天花板明显；同时家里刚有孩子，经济压力大",
     source_turn_id="turn_1",
     source_skill="icarus-paradox-diagnosis",
-    confidence=0.9,
+    confidence=0.9, weight=1.8,
 )
 
 n_option_stay = GraphNode(
@@ -54,7 +54,7 @@ n_option_stay = GraphNode(
     label="留在大厂",
     content="继续在当前公司做技术总监，稳定收入，但成长空间有限",
     source_turn_id="turn_1",
-    confidence=0.7,
+    confidence=0.7, weight=1.2,
 )
 
 n_option_startup = GraphNode(
@@ -63,7 +63,7 @@ n_option_startup = GraphNode(
     label="离职创业",
     content="做 AI 教育产品，利用自己的技术和教育行业认知",
     source_turn_id="turn_1",
-    confidence=0.6,
+    confidence=0.6, weight=1.5,
 )
 
 n_constraint_family = GraphNode(
@@ -72,7 +72,7 @@ n_constraint_family = GraphNode(
     label="家庭经济压力",
     content="孩子刚出生，房贷压力，配偶希望稳定",
     source_turn_id="turn_1",
-    confidence=0.95,
+    confidence=0.95, weight=1.4,
 )
 
 n_evidence_ceiling = GraphNode(
@@ -81,7 +81,7 @@ n_evidence_ceiling = GraphNode(
     label="大厂天花板",
     content="用户明确感到在当前公司的技术总监位置上增长空间有限，过去一年没有新挑战",
     source_turn_id="turn_1",
-    confidence=0.85,
+    confidence=0.85, weight=1.0,
 )
 
 simulate_turn(1,
@@ -111,7 +111,7 @@ n_resource_tech = GraphNode(
     content="在大模型微调、RAG 架构方面有深度积累，团队管理经验",
     source_turn_id="turn_2",
     source_skill="strategic-resource-evaluation",
-    confidence=0.85,
+    confidence=0.85, weight=1.3,
 )
 
 n_resource_network = GraphNode(
@@ -121,7 +121,7 @@ n_resource_network = GraphNode(
     content="之前做过教育科技项目，认识一些校长和培训机构负责人",
     source_turn_id="turn_2",
     source_skill="strategic-resource-evaluation",
-    confidence=0.7,
+    confidence=0.7, weight=0.9,
 )
 
 n_resource_savings = GraphNode(
@@ -131,7 +131,7 @@ n_resource_savings = GraphNode(
     content="大约有 18 个月的生活费积蓄",
     source_turn_id="turn_2",
     source_skill="resource-leverage-strategies",
-    confidence=0.9,
+    confidence=0.9, weight=1.1,
 )
 
 n_mechanism_leverage = GraphNode(
@@ -141,7 +141,7 @@ n_mechanism_leverage = GraphNode(
     content="利用业余时间先做 MVP，不辞职，用最小资源验证市场需求",
     source_turn_id="turn_2",
     source_skill="resource-leverage-strategies",
-    confidence=0.75,
+    confidence=0.75, weight=1.6,
 )
 
 simulate_turn(2,
@@ -177,7 +177,7 @@ n_position_market = GraphNode(
     content="当前 AI 教育市场高度碎片化，大厂（字节、网易）在通用教育，但垂直领域（编程+AI 素养）缺乏深度产品",
     source_turn_id="turn_3",
     source_skill="strategic-positioning-porter",
-    confidence=0.7,
+    confidence=0.7, weight=1.2,
 )
 
 n_stakeholder_bigtech = GraphNode(
@@ -187,7 +187,7 @@ n_stakeholder_bigtech = GraphNode(
     content="字节跳动、网易有道等，资金充裕但在 AI 素养教育方面不够深",
     source_turn_id="turn_3",
     source_skill="competitive-game-theory-analysis",
-    confidence=0.8,
+    confidence=0.8, weight=1.1,
 )
 
 n_risk_compete = GraphNode(
@@ -197,7 +197,7 @@ n_risk_compete = GraphNode(
     content="如果 AI 素养教育被大厂看到并快速投入，小团队可能被碾压",
     source_turn_id="turn_3",
     source_skill="competitive-game-theory-analysis",
-    confidence=0.65,
+    confidence=0.65, weight=1.3,
 )
 
 n_assumption_niche = GraphNode(
@@ -207,7 +207,7 @@ n_assumption_niche = GraphNode(
     content="假设：在 AI 素养教育的垂直细分领域，深度内容和社区粘性可以构建大厂难以复制的护城河",
     source_turn_id="turn_3",
     source_skill="strategic-positioning-porter",
-    confidence=0.55,
+    confidence=0.55, weight=1.4,
 )
 
 simulate_turn(3,
@@ -243,7 +243,7 @@ n_pattern_bias = GraphNode(
     content="识别到用户可能存在'乐观偏差'——过度相信自己的技术优势能转化为商业成功",
     source_turn_id="turn_4",
     source_skill="decision-bias-detection",
-    confidence=0.75,
+    confidence=0.75, weight=1.2,
 )
 
 n_assumption_convert = GraphNode(
@@ -253,7 +253,7 @@ n_assumption_convert = GraphNode(
     content="隐含假设：深度技术能力能直接转化为教育产品的商业成功",
     source_turn_id="turn_4",
     source_skill="decision-bias-detection",
-    confidence=0.4,
+    confidence=0.4, weight=1.7,
 )
 
 n_signal_validate = GraphNode(
@@ -263,7 +263,7 @@ n_signal_validate = GraphNode(
     content="找 10 个目标用户，收费 199 做一个 4 周的 AI 素养小班课。如果 7 人以上愿意付费，说明需求真实",
     source_turn_id="turn_4",
     source_skill="chaos-theory-strategic-management",
-    confidence=0.8,
+    confidence=0.8, weight=1.3,
 )
 
 n_risk_chaos = GraphNode(
@@ -273,7 +273,7 @@ n_risk_chaos = GraphNode(
     content="AI 教育领域可能面临政策监管的突然变化（如内容审查、牌照要求）",
     source_turn_id="turn_4",
     source_skill="chaos-theory-strategic-management",
-    confidence=0.6,
+    confidence=0.6, weight=0.8,
 )
 
 simulate_turn(4,
@@ -309,7 +309,7 @@ n_action_mvp = GraphNode(
     content="不辞职，用 2 周准备课程内容，在教育行业人脉圈发起 10 人付费小班课（199 元/人）",
     source_turn_id="turn_5",
     source_skill="incremental-market-domination-strategy",
-    confidence=0.85,
+    confidence=0.85, weight=1.8,
 )
 
 n_action_signal_check = GraphNode(
@@ -319,7 +319,7 @@ n_action_signal_check = GraphNode(
     content="小班课结束后评估：续报率、NPS、用户反馈。如果数据正面，启动第二期并考虑兼职转全职时间表",
     source_turn_id="turn_5",
     source_skill="incremental-market-domination-strategy",
-    confidence=0.8,
+    confidence=0.8, weight=1.3,
 )
 
 n_mechanism_alliance = GraphNode(
@@ -329,7 +329,7 @@ n_mechanism_alliance = GraphNode(
     content="找一个有教育行业运营经验的合伙人，补齐非技术短板，降低单人风险",
     source_turn_id="turn_5",
     source_skill="strategic-alliance-management",
-    confidence=0.7,
+    confidence=0.7, weight=1.0,
 )
 
 n_signal_nps = GraphNode(
@@ -338,7 +338,7 @@ n_signal_nps = GraphNode(
     label="NPS > 50 为绿灯",
     content="如果首期小班课 NPS > 50 且续报意愿 > 60%，认为产品方向正确",
     source_turn_id="turn_5",
-    confidence=0.8,
+    confidence=0.8, weight=1.1,
 )
 
 simulate_turn(5,
@@ -374,7 +374,7 @@ n_goal_north = GraphNode(
     content="3 年愿景：成为中国 AI 素养教育的头部品牌，从小班课开始，逐步扩展到平台",
     source_turn_id="turn_6",
     source_skill="holistic-systems-perspective",
-    confidence=0.55,
+    confidence=0.55, weight=1.5,
 )
 
 n_pattern_analyzer = GraphNode(
@@ -384,7 +384,7 @@ n_pattern_analyzer = GraphNode(
     content="当前最佳战略模式是 Miles-Snow 的 Analyzer：在大厂保持稳定（Defender 面），同时有限度地探索新机会（Prospector 面）",
     source_turn_id="turn_6",
     source_skill="miles-snow-strategic-typology",
-    confidence=0.8,
+    confidence=0.8, weight=1.4,
 )
 
 n_evidence_synthesis = GraphNode(
@@ -394,7 +394,7 @@ n_evidence_synthesis = GraphNode(
     content="综合看：技术能力强（资源优势）、市场缝隙存在（定位机会）、但转化假设未验证（关键风险）、家庭约束真实（刚性限制）→ 最优路径是渐进式验证",
     source_turn_id="turn_6",
     source_skill="holistic-systems-perspective",
-    confidence=0.85,
+    confidence=0.85, weight=1.6,
 )
 
 simulate_turn(6,
