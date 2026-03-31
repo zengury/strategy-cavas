@@ -774,6 +774,101 @@
   .dark .wb-footer { border-top: 1px solid #222; color: #444; }
   .light .wb-footer { border-top: 1px solid #eee; color: #aaa; }
 
+  /* ── Whiteboard Tabs ────────────────────────── */
+  .wb-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 16px;
+  }
+
+  .wb-tab {
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .dark .wb-tab { color: #666; }
+  .light .wb-tab { color: #999; }
+  .wb-tab:hover { opacity: 0.8; }
+  .wb-tab.active { border-bottom-color: #4A90D9; }
+  .dark .wb-tab.active { color: #4A90D9; }
+  .light .wb-tab.active { color: #1a73e8; }
+
+  .dark .wb-tabs { border-bottom: 1px solid #222; }
+  .light .wb-tabs { border-bottom: 1px solid #eee; }
+
+  /* ── Strategy House SVG ─────────────────────── */
+  .strategy-house-container {
+    padding: 20px;
+    text-align: center;
+  }
+
+  .strategy-house-container svg {
+    width: 100%;
+    max-width: 680px;
+  }
+
+  /* ── Golden Phrases ─────────────────────────── */
+  .golden-section {
+    padding: 16px 20px;
+  }
+
+  .golden-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+  }
+  .dark .golden-section-title { color: #FFD54F; border-bottom: 1px solid #2a2210; }
+  .light .golden-section-title { color: #F57F17; border-bottom: 1px solid #FFF3E0; }
+
+  .golden-phrase-card {
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    border-left: 3px solid #FFD54F;
+  }
+  .dark .golden-phrase-card { background: #1a1810; color: #e8e0c8; }
+  .light .golden-phrase-card { background: #FFFDE7; color: #333; }
+
+  .golden-quote-mark {
+    font-size: 20px;
+    font-weight: 700;
+    color: #FFD54F;
+    line-height: 1;
+  }
+
+  /* ── Named Concepts ─────────────────────────── */
+  .concepts-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .concept-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 14px;
+    letter-spacing: 0.3px;
+  }
+  .dark .concept-tag { background: #1a2744; color: #5ba3f5; border: 1px solid #2a3a5a; }
+  .light .concept-tag { background: #e8f0fe; color: #1a73e8; border: 1px solid #c8d8f8; }
+
   /* ── 节点选中高亮指示 ─────────────────────── */
   .node-selected-indicator {
     position: absolute;
@@ -858,12 +953,19 @@
         <span id="wb-theme-icon">&#9788;</span>
       </button>
     </div>
-    <div class="wb-toolbar">
+    <div class="wb-tabs">
+      <button class="wb-tab active" id="tab-house" onclick="switchWbTab('house')">Strategy House</button>
+      <button class="wb-tab" id="tab-analysis" onclick="switchWbTab('analysis')">Analysis</button>
+    </div>
+    <div class="wb-toolbar" id="wb-toolbar-analysis" style="display:none">
       <span class="wb-count" id="wb-count">0 nodes selected</span>
       <button onclick="exportWhiteboard()">Export / Print</button>
     </div>
-    <div class="wb-body" id="wb-body">
+    <div class="wb-body" id="wb-body-analysis" style="display:none">
       <div class="wb-empty">Select nodes in the left panel to build analysis</div>
+    </div>
+    <div class="wb-body" id="wb-body-house">
+      <div class="wb-empty">Loading Strategy House...</div>
     </div>
     <div class="wb-footer" id="wb-footer">Strategic Canvas</div>
   </div>
@@ -909,6 +1011,7 @@ function init() {
   initGraph();
   setupSlider();
   initResizers();
+  renderStrategyHouse();
   // Force 3D graph to resize for 3-panel layout
   setTimeout(() => {
     const c = document.getElementById("graph-container");
@@ -1328,6 +1431,7 @@ function toggleBoardTheme() {
     titleEl.textContent = 'BLACKBOARD';
     iconEl.innerHTML = '&#9788;'; // sun
   }
+  renderStrategyHouse(); // 更新 SVG 颜色
 }
 
 function toggleRotate() {
@@ -1529,13 +1633,13 @@ function verdictBlock(text) {
 }
 
 function renderWhiteboard() {
-  const container = document.getElementById("wb-body");
+  const container = document.getElementById("wb-body-analysis");
   const badge = document.getElementById("wb-pattern-badge");
   const countEl = document.getElementById("wb-count");
   const footerEl = document.getElementById("wb-footer");
 
   if (selectedNodes.size === 0) {
-    container.innerHTML = '<div class="wb-empty">Select nodes in the left panel to build strategic analysis</div>';
+    container.innerHTML = '<div class="wb-empty">Select nodes in the left panel to build analysis</div>';
     badge.textContent = "No Selection";
     countEl.textContent = "0 nodes selected";
     footerEl.textContent = "Strategic Canvas";
@@ -1974,8 +2078,262 @@ function relatesToBoth(edge, id1, id2) {
 // Whiteboard Export
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// Whiteboard Tab Switching
+// ═══════════════════════════════════════════════════════════════
+
+let currentWbTab = "house";
+
+function switchWbTab(tab) {
+  currentWbTab = tab;
+  document.getElementById("tab-house").classList.toggle("active", tab === "house");
+  document.getElementById("tab-analysis").classList.toggle("active", tab === "analysis");
+  document.getElementById("wb-body-house").style.display = tab === "house" ? "" : "none";
+  document.getElementById("wb-body-analysis").style.display = tab === "analysis" ? "" : "none";
+  document.getElementById("wb-toolbar-analysis").style.display = tab === "analysis" ? "" : "none";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Strategy House Rendering
+// ═══════════════════════════════════════════════════════════════
+
+const GOLDEN_PHRASES = [
+  "先验证，后投入。用一个最小实验测试最大假设。",
+  "你的护城河不是技术，是对 AI 教育的深度理解。技术是工具。",
+  "这不是创业决策，是一个可逆的探测行动。失败成本 = 两个月周末。",
+];
+
+const NAMED_CONCEPTS = [
+  "不下牌桌的探测", "乐观偏差", "假设缺口", "渐进式验证",
+  "资源杠杆", "Analyzer 模式", "付费验证信号",
+];
+
+const HOUSE_MAP = {
+  goal: "roof", position: "roof",
+  option: "pillar", mechanism: "pillar",
+  resource: "foundation", constraint: "foundation", evidence: "foundation",
+  tension: "internal", assumption: "internal", risk: "internal", pattern: "internal",
+  signal: "signal", action: "action", stakeholder: "external",
+};
+
+const HOUSE_FILL = {
+  roof:       { bg: "#332B00", border: "#FFD54F", text: "#FFD54F", label: "#FFE082" },
+  pillar:     { bg: "#0A2E0A", border: "#66BB6A", text: "#A5D6A7", label: "#C8E6C9" },
+  foundation: { bg: "#0A1929", border: "#42A5F5", text: "#90CAF9", label: "#BBDEFB" },
+  internal:   { bg: "#2A1500", border: "#FF9800", text: "#FFCC80", label: "#FFE0B2" },
+  signal:     { bg: "#002A2A", border: "#26C6DA", text: "#80DEEA", label: "#B2EBF2" },
+  action:     { bg: "#1A002A", border: "#AB47BC", text: "#CE93D8", label: "#E1BEE7" },
+};
+
+// Light theme variants
+const HOUSE_FILL_LIGHT = {
+  roof:       { bg: "#FFF8E1", border: "#FFD54F", text: "#F57F17", label: "#E65100" },
+  pillar:     { bg: "#E8F5E9", border: "#81C784", text: "#2E7D32", label: "#1B5E20" },
+  foundation: { bg: "#E3F2FD", border: "#64B5F6", text: "#1565C0", label: "#0D47A1" },
+  internal:   { bg: "#FFF3E0", border: "#FFB74D", text: "#E65100", label: "#BF360C" },
+  signal:     { bg: "#E0F7FA", border: "#4DD0E1", text: "#00838F", label: "#006064" },
+  action:     { bg: "#F3E5F5", border: "#BA68C8", text: "#6A1B9A", label: "#4A148C" },
+};
+
+function getHouseColors() {
+  const panel = document.getElementById("wb-panel");
+  return panel.classList.contains("light") ? HOUSE_FILL_LIGHT : HOUSE_FILL;
+}
+
+function renderStrategyHouse() {
+  if (!DATA) return;
+  const container = document.getElementById("wb-body-house");
+  const nodes = DATA.graph.nodes;
+  const colors = getHouseColors();
+  const isDark = !document.getElementById("wb-panel").classList.contains("light");
+
+  // Group nodes by house part
+  const groups = { roof: [], pillar: [], foundation: [], internal: [], signal: [], action: [], external: [] };
+  nodes.forEach(n => {
+    const part = HOUSE_MAP[n.node_type] || "internal";
+    if (groups[part]) groups[part].push(n);
+  });
+
+  // SVG dimensions
+  const W = 660, H = 560;
+  const pad = 16;
+
+  // Roof
+  const roofY = 20, roofH = 90;
+  const roofPeakX = W / 2;
+  const roofBaseY = roofY + roofH;
+  const c = colors.roof;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">`;
+
+  // Background
+  svg += `<rect width="${W}" height="${H}" fill="none"/>`;
+
+  // ── Roof (Vision/Goal) ──
+  svg += `<polygon points="${roofPeakX},${roofY} ${pad},${roofBaseY} ${W-pad},${roofBaseY}"
+    fill="${c.bg}" stroke="${c.border}" stroke-width="2"/>`;
+  svg += `<text x="${roofPeakX}" y="${roofY+28}" text-anchor="middle"
+    font-size="10" fill="${c.text}" font-weight="700" letter-spacing="2">VISION</text>`;
+  groups.roof.forEach((n, i) => {
+    const text = n.label.length > 45 ? n.label.slice(0, 43) + "..." : n.label;
+    svg += `<text x="${roofPeakX}" y="${roofY+48+i*18}" text-anchor="middle"
+      font-size="12" fill="${c.label}" font-weight="500">${escSvg(text)}</text>`;
+  });
+
+  // ── Pillars (Options/Mechanisms) ──
+  const pillarY = roofBaseY + 6;
+  const pillarH = 160;
+  const pillars = groups.pillar;
+  const pCount = Math.max(pillars.length, 2);
+  const pW = Math.min(140, (W - pad*2 - 20) / pCount - 12);
+  const totalPW = pCount * (pW + 12) - 12;
+  const pStartX = (W - totalPW) / 2;
+  const pc = colors.pillar;
+
+  pillars.forEach((n, i) => {
+    const px = pStartX + i * (pW + 12);
+    svg += `<rect x="${px}" y="${pillarY}" width="${pW}" height="${pillarH}"
+      rx="4" fill="${pc.bg}" stroke="${pc.border}" stroke-width="1.5"/>`;
+    // Label
+    const label = n.label.length > 18 ? n.label.slice(0, 16) + ".." : n.label;
+    svg += `<text x="${px + pW/2}" y="${pillarY+22}" text-anchor="middle"
+      font-size="11" fill="${pc.label}" font-weight="600">${escSvg(label)}</text>`;
+    // Content wrapped
+    const lines = wrapText(n.content, 22);
+    lines.slice(0, 6).forEach((line, li) => {
+      svg += `<text x="${px+8}" y="${pillarY+40+li*15}" font-size="10" fill="${pc.text}">${escSvg(line)}</text>`;
+    });
+  });
+
+  // ── Internal tags (Assumptions/Risks/Tensions) — floating between pillars ──
+  const ic = colors.internal;
+  const internals = groups.internal.slice(0, 5);
+  if (internals.length > 0) {
+    const tagW = 150, tagH = 28;
+    // Position on the right side
+    const tagX = W - pad - tagW - 4;
+    internals.forEach((n, i) => {
+      const ty = pillarY + 8 + i * 34;
+      svg += `<rect x="${tagX}" y="${ty}" width="${tagW}" height="${tagH}"
+        rx="4" fill="${ic.bg}" stroke="${ic.border}" stroke-width="1" stroke-dasharray="4,2"/>`;
+      svg += `<text x="${tagX+6}" y="${ty+11}" font-size="8" fill="${ic.text}" font-weight="700"
+        text-transform="uppercase">${n.node_type.toUpperCase()}</text>`;
+      const label = n.label.length > 22 ? n.label.slice(0, 20) + ".." : n.label;
+      svg += `<text x="${tagX+6}" y="${ty+23}" font-size="10" fill="${ic.text}">${escSvg(label)}</text>`;
+    });
+  }
+
+  // ── Foundation (Resources/Capabilities) ──
+  const foundY = pillarY + pillarH + 6;
+  const foundH = 60;
+  const fc = colors.foundation;
+
+  svg += `<rect x="${pad}" y="${foundY}" width="${W-pad*2}" height="${foundH}"
+    rx="4" fill="${fc.bg}" stroke="${fc.border}" stroke-width="2"/>`;
+  svg += `<text x="${pad+14}" y="${foundY+18}" font-size="10" fill="${fc.text}"
+    font-weight="700" letter-spacing="2">FOUNDATION</text>`;
+
+  const founds = groups.foundation.slice(0, 5);
+  const fColW = (W - pad*2 - 28) / Math.max(founds.length, 1);
+  founds.forEach((n, i) => {
+    const fx = pad + 14 + i * fColW;
+    const label = n.label.length > 20 ? n.label.slice(0, 18) + ".." : n.label;
+    svg += `<text x="${fx}" y="${foundY+38}" font-size="11" fill="${fc.label}" font-weight="500">${escSvg(label)}</text>`;
+    if (n.content) {
+      const desc = n.content.length > 30 ? n.content.slice(0, 28) + ".." : n.content;
+      svg += `<text x="${fx}" y="${foundY+52}" font-size="9" fill="${fc.text}">${escSvg(desc)}</text>`;
+    }
+  });
+
+  // ── Actions + Signals (below foundation) ──
+  const actionY = foundY + foundH + 18;
+  const ac = colors.action;
+  const sc = colors.signal;
+
+  if (groups.action.length > 0) {
+    svg += `<text x="${pad}" y="${actionY}" font-size="10" fill="${ac.text}"
+      font-weight="700" letter-spacing="2">NEXT MOVES</text>`;
+    groups.action.slice(0, 3).forEach((n, i) => {
+      const ax = pad + i * 215;
+      svg += `<rect x="${ax}" y="${actionY+6}" width="${205}" height="${34}"
+        rx="4" fill="${ac.bg}" stroke="${ac.border}" stroke-width="1"/>`;
+      const label = n.label.length > 28 ? n.label.slice(0, 26) + ".." : n.label;
+      svg += `<text x="${ax+10}" y="${actionY+28}" font-size="11" fill="${ac.label}">${escSvg(label)}</text>`;
+    });
+  }
+
+  if (groups.signal.length > 0) {
+    const sigY = actionY + (groups.action.length > 0 ? 54 : 0);
+    svg += `<text x="${pad}" y="${sigY}" font-size="10" fill="${sc.text}"
+      font-weight="700" letter-spacing="2">VALIDATION SIGNALS</text>`;
+    groups.signal.slice(0, 3).forEach((n, i) => {
+      const sx = pad + i * 215;
+      svg += `<rect x="${sx}" y="${sigY+6}" width="${205}" height="${34}"
+        rx="4" fill="${sc.bg}" stroke="${sc.border}" stroke-width="1"/>`;
+      const label = n.label.length > 28 ? n.label.slice(0, 26) + ".." : n.label;
+      svg += `<text x="${sx+10}" y="${sigY+28}" font-size="11" fill="${sc.label}">${escSvg(label)}</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+
+  // ── Build full HTML ──
+  const themeClass = isDark ? "dark" : "light";
+
+  let html = `<div class="strategy-house-container">${svg}</div>`;
+
+  // Golden phrases
+  html += `<div class="golden-section">
+    <div class="golden-section-title">Golden Phrases</div>`;
+  GOLDEN_PHRASES.forEach(p => {
+    html += `<div class="golden-phrase-card">
+      <span class="golden-quote-mark">\u201C</span> ${escHtml(p)} <span class="golden-quote-mark">\u201D</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Named concepts
+  html += `<div class="golden-section">
+    <div class="golden-section-title" style="border-bottom-color:${isDark?'#1a2744':'#e8f0fe'}; color:${isDark?'#5ba3f5':'#1a73e8'}">Named Concepts</div>
+    <div class="concepts-list">`;
+  NAMED_CONCEPTS.forEach(c => {
+    html += `<span class="concept-tag">${escHtml(c)}</span>`;
+  });
+  html += `</div></div>`;
+
+  container.innerHTML = html;
+}
+
+function escSvg(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function wrapText(text, maxChars) {
+  if (!text) return [];
+  const words = text.split('');
+  const lines = [];
+  let line = '';
+  for (const ch of words) {
+    line += ch;
+    if (line.length >= maxChars) {
+      lines.push(line);
+      line = '';
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Whiteboard Export
+// ═══════════════════════════════════════════════════════════════
+
 function exportWhiteboard() {
-  const wbDoc = document.querySelector(".wb-doc");
+  const wbDoc = document.querySelector(".wb-doc") || document.getElementById("wb-body-house");
   if (!wbDoc) { alert("No whiteboard content to export"); return; }
 
   // Use html2canvas-like approach: render to a hidden iframe then capture
