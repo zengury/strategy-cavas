@@ -21,8 +21,8 @@ from typing import Optional
 from anthropic import Anthropic
 
 from models.schema import (
-    SkillInvocation, CanvasState, ConversationTurn,
-    CANVAS_ZONES, Stage,
+    SkillInvocation, CanvasGraph, ConversationTurn,
+    CANVAS_ZONES, Stage, NODE_TYPE_TO_ZONE,
 )
 from engine.skill_registry import SkillRegistry
 
@@ -53,14 +53,17 @@ class SkillRouter:
     async def route(
         self,
         turn: ConversationTurn,
-        canvas: CanvasState,
+        canvas: CanvasGraph,
         context_snapshot: dict,
     ) -> list[SkillInvocation]:
-        # 通道1：规则匹配
+        # 通道1：规则匹配（零 token 消耗）
         rule_suggestions = self._rule_based_suggestions(canvas, turn.stage)
 
-        # 通道2：LLM 路由
-        model_suggestions = await self._model_based_route(turn, canvas, context_snapshot)
+        # 通道2：LLM 路由（仅在规则匹配不足时启用，节省 token）
+        if len(rule_suggestions) < 2:
+            model_suggestions = await self._model_based_route(turn, canvas, context_snapshot)
+        else:
+            model_suggestions = []
 
         # 合并去重
         merged = self._merge(rule_suggestions, model_suggestions)
@@ -89,14 +92,20 @@ class SkillRouter:
         return invocations
 
     def _rule_based_suggestions(
-        self, canvas: CanvasState, stage: Stage,
+        self, canvas: CanvasGraph, stage: Stage,
     ) -> list[tuple[str, str]]:
         suggestions = []
         active_ids = set(self.registry.skill_ids_active())
 
+        # 从图节点推断哪些 zone 已覆盖
+        covered_zones = set()
+        for node in canvas.active_nodes():
+            zone = NODE_TYPE_TO_ZONE.get(node.node_type)
+            if zone:
+                covered_zones.add(zone)
+
         for zone in CANVAS_ZONES:
-            active_nodes = canvas.get_zone_nodes(zone)
-            if len(active_nodes) == 0:
+            if zone not in covered_zones:
                 candidates = GAP_RULES.get(zone, [])
                 for skill_id in candidates:
                     if skill_id in active_ids:
@@ -120,37 +129,30 @@ class SkillRouter:
     async def _model_based_route(
         self,
         turn: ConversationTurn,
-        canvas: CanvasState,
+        canvas: CanvasGraph,
         context_snapshot: dict,
     ) -> list[tuple[str, str]]:
         catalog = self.registry.catalog_for_prompt()
         if not catalog:
             return []
 
-        canvas_summary = json.dumps(canvas.to_summary(), ensure_ascii=False, indent=1)
+        # 精简画布摘要：只列出已有节点类型和数量，避免发送完整内容
+        type_counts = {}
+        for n in canvas.active_nodes():
+            t = n.node_type.value
+            type_counts[t] = type_counts.get(t, 0) + 1
+        canvas_brief = json.dumps(type_counts, ensure_ascii=False) if type_counts else "空画布"
 
-        prompt = f"""你是一个战略教练系统的技能路由器。
-用户刚说了这段话，请从技能目录中选出 1~3 个最相关的技能。
+        prompt = f"""从技能目录选 1~3 个最相关技能。
 
-## 用户输入
-{turn.text}
+用户: {turn.text}
+阶段: {turn.stage.value}
+画布: {canvas_brief}
 
-## 当前决策阶段
-{turn.stage.value}
-
-## 当前画布状态
-{canvas_summary}
-
-## 可用技能目录
+技能:
 {catalog}
 
-## 输出格式
-返回 JSON 数组，每项包含 skill_id 和 reason：
-```json
-[{{"skill_id": "xxx", "reason": "一句话说明为什么选这个"}}]
-```
-
-注意：最多选 3 个，优先选对当前对话最有帮助的，reason 要具体。"""
+返回 JSON: [{{"skill_id": "xxx", "reason": "..."}}]"""
 
         try:
             response = self.client.messages.create(

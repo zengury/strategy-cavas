@@ -106,6 +106,66 @@ class CanvasStateManager:
         node.y = bias[1] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
         node.z = bias[2] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
 
+    def parse_llm_canvas_output(self, parsed: dict, turn_id: str) -> GraphDiff:
+        """从 LLM JSON 输出解析画布增量。"""
+        diff = GraphDiff()
+        updates = parsed.get("canvas_updates", {})
+
+        # NodeType 名称 → zone 的反向映射
+        zone_to_types = {
+            "north_star": [NodeType.GOAL],
+            "context":    [NodeType.POSITION, NodeType.RESOURCE, NodeType.CONSTRAINT,
+                           NodeType.STAKEHOLDER, NodeType.EVIDENCE, NodeType.PATTERN],
+            "options":    [NodeType.OPTION, NodeType.MECHANISM],
+            "tradeoffs":  [NodeType.TENSION],
+            "assumptions":[NodeType.ASSUMPTION],
+            "signals":    [NodeType.SIGNAL, NodeType.RISK],
+            "next_moves": [NodeType.ACTION],
+        }
+
+        for zone, items in updates.items():
+            if not isinstance(items, list):
+                continue
+            # 该 zone 对应的默认 NodeType
+            default_type = zone_to_types.get(zone, [NodeType.EVIDENCE])
+            node_type = default_type[0] if default_type else NodeType.EVIDENCE
+
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+
+                action = item.get("action", "add")
+
+                if action == "invalidate":
+                    node_id = item.get("node_id", "")
+                    if node_id:
+                        diff.invalidated_node_ids.append(node_id)
+                elif action == "modify":
+                    node_id = item.get("node_id", "")
+                    content = item.get("content", "")
+                    if node_id and content:
+                        diff.modified_nodes.append({
+                            "node_id": node_id,
+                            "field": "content",
+                            "new": content,
+                        })
+                else:
+                    # 新增节点
+                    content = item.get("content", "")
+                    if not content:
+                        continue
+                    node = GraphNode(
+                        node_type=node_type,
+                        label=content[:40],
+                        content=content,
+                        source_turn_id=turn_id,
+                        source_evidence=item.get("evidence", ""),
+                        confidence=item.get("confidence", 0.8),
+                    )
+                    diff.added_nodes.append(node)
+
+        return diff
+
     # ── 查询 ─────────────────────────────────────────────────
 
     def get_nodes_by_type(self, node_type: NodeType) -> list[GraphNode]:

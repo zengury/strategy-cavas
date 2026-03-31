@@ -72,8 +72,16 @@ class SkillRegistry:
             log.warning(f"Skills directory not found: {self.skills_dir}")
             return
 
+        # 加载子目录中的 SKILL.md（主要格式）
+        for path in sorted(self.skills_dir.glob("*/SKILL.md")):
+            try:
+                self._load_skill(path)
+            except Exception as e:
+                log.error(f"Failed to load skill {path.parent.name}: {e}")
+
+        # 兼容：加载顶层 .md（排除 _ 开头和 index）
         for path in sorted(self.skills_dir.glob("*.md")):
-            if path.name.startswith("_"):
+            if path.name.startswith("_") or path.stem == "index":
                 continue
             try:
                 self._load_skill(path)
@@ -87,6 +95,7 @@ class SkillRegistry:
         meta, definition = self._parse_frontmatter(text, path)
         self._skills[meta.skill_id] = meta
         self._definitions[meta.skill_id] = definition
+        log.debug(f"  Loaded: {meta.skill_id} ({meta.name})")
 
     def _parse_frontmatter(self, text: str, path: Path) -> tuple[SkillMeta, str]:
         meta = SkillMeta(definition_path=str(path))
@@ -122,7 +131,14 @@ class SkillRegistry:
             definition = text
 
         if not meta.skill_id:
-            meta.skill_id = path.stem
+            # 用 name 字段作为 skill_id（大多数 skill 只有 name 没有 id）
+            if meta.name:
+                meta.skill_id = meta.name
+            # SKILL.md 文件用父目录名
+            elif path.stem == "SKILL":
+                meta.skill_id = path.parent.name
+            else:
+                meta.skill_id = path.stem
 
         return meta, definition
 

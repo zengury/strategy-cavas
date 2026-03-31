@@ -11,7 +11,7 @@ ContextBus — 多模态上下文总线。
 import logging
 from typing import Optional
 
-from models.schema import ContextObject, ConversationTurn, CanvasState
+from models.schema import ContextObject, ConversationTurn, CanvasGraph
 
 log = logging.getLogger("context_bus")
 
@@ -53,7 +53,7 @@ class ContextBus:
 
     # ── 上下文快照 ────────────────────────────────────────────────
 
-    def snapshot(self, canvas: Optional[CanvasState] = None) -> dict:
+    def snapshot(self, canvas: Optional[CanvasGraph] = None) -> dict:
         return {
             "conversation": [
                 {"speaker": t.speaker, "text": t.text, "turn_id": t.turn_id,

@@ -329,3 +329,33 @@ class SkillMeta:
     fail_count: int = 0
     satisfaction_contribution: float = 0.0
     definition_path: str = ""
+
+
+# ── 兼容别名 ────────────────────────────────────────────────────
+# v1 用 CanvasState + 固定 zone，v2 改为 CanvasGraph 自由图
+# 保留别名避免 import 报错
+CanvasState = CanvasGraph
+
+# 画布区块名（v1 遗留，用于 rule-based 路由的缺口检测）
+CANVAS_ZONES = [
+    "north_star", "context", "options",
+    "tradeoffs", "assumptions", "signals", "next_moves",
+]
+
+# NodeType → zone 的映射（让 rule 路由能从图节点推断 zone 覆盖）
+NODE_TYPE_TO_ZONE: dict[NodeType, str] = {
+    NodeType.GOAL:        "north_star",
+    NodeType.POSITION:    "context",
+    NodeType.OPTION:      "options",
+    NodeType.RESOURCE:    "context",
+    NodeType.CONSTRAINT:  "context",
+    NodeType.TENSION:     "tradeoffs",
+    NodeType.ASSUMPTION:  "assumptions",
+    NodeType.RISK:        "signals",
+    NodeType.SIGNAL:      "signals",
+    NodeType.STAKEHOLDER: "context",
+    NodeType.MECHANISM:   "options",
+    NodeType.EVIDENCE:    "context",
+    NodeType.PATTERN:     "context",
+    NodeType.ACTION:      "next_moves",
+}

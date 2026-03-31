@@ -19,7 +19,7 @@ import logging
 from anthropic import Anthropic
 
 from models.schema import (
-    ConversationTurn, SkillInvocation, Stage, CanvasDiff,
+    ConversationTurn, SkillInvocation, Stage,
 )
 from engine.skill_registry import SkillRegistry
 from engine.skill_router import SkillRouter
@@ -123,17 +123,21 @@ class ConversationEngine:
         self.context_bus.add_turn(user_turn)
 
         # 2. Skill 路由
-        context_snapshot = self.context_bus.snapshot(self.canvas_manager.canvas)
+        context_snapshot = self.context_bus.snapshot(self.canvas_manager.graph)
         invocations = await self.router.route(
-            user_turn, self.canvas_manager.canvas, context_snapshot,
+            user_turn, self.canvas_manager.graph, context_snapshot,
         )
 
-        # 3. 加载技能定义
+        # 3. 加载技能定义（截断到 1500 字符，避免大量 token 消耗）
+        MAX_SKILL_CHARS = 1500
         skill_definitions = []
         for inv in invocations:
             defn = self.registry.get_definition(inv.skill_id)
             if defn:
-                skill_definitions.append(f"### Skill: {inv.skill_id}\n{defn}")
+                truncated = defn[:MAX_SKILL_CHARS]
+                if len(defn) > MAX_SKILL_CHARS:
+                    truncated += "\n...(已截断)"
+                skill_definitions.append(f"### Skill: {inv.skill_id}\n{truncated}")
             self.registry.record_hit(inv.skill_id, success=True)
 
         # 4. LLM 生成
@@ -187,14 +191,20 @@ class ConversationEngine:
         skill_definitions: list[str], invocations: list[SkillInvocation],
     ) -> str:
         skills_block = "\n\n---\n\n".join(skill_definitions) if skill_definitions else "无特定技能激活"
-        canvas_json = json.dumps(
-            self.canvas_manager.canvas.to_summary(), ensure_ascii=False, indent=1,
-        )
+        # 精简画布：只发类型计数 + 最重要的几个节点标签
+        summary = self.canvas_manager.graph.to_summary()
+        brief = {}
+        for ntype, nodes in summary.items():
+            labels = [n["label"] for n in nodes[:5]]  # 每类型最多 5 个标签
+            brief[ntype] = {"count": len(nodes), "labels": labels}
+        canvas_json = json.dumps(brief, ensure_ascii=False, indent=1)
 
         conversation_context = ""
-        for t in self.context_bus.recent_turns(10):
+        for t in self.context_bus.recent_turns(5):
             prefix = "用户" if t.speaker == "user" else "教练"
-            conversation_context += f"{prefix}: {t.text}\n\n"
+            # 截断单轮内容避免超长回复堆积 token
+            text = t.text[:800] if len(t.text) > 800 else t.text
+            conversation_context += f"{prefix}: {text}\n\n"
 
         user_message = f"""## 对话历史
 {conversation_context}
