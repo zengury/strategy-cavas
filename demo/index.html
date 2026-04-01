@@ -1243,7 +1243,14 @@ function setupSlider() {
 function updateGraph() {
   const data = getFilteredData(currentTurn);
   graphInstance.graphData(data);
+  // 清除不在当前 turn 范围内的选中节点
+  const visibleIds = new Set(data.nodes.map(n => n.id));
+  for (const id of [...selectedNodes]) {
+    if (!visibleIds.has(id)) selectedNodes.delete(id);
+  }
   renderNodeSelector();
+  renderWhiteboard();
+  renderStrategyHouse();
 }
 
 function updateConversationHighlight() {
@@ -1327,6 +1334,7 @@ function toggleNodeSelection(nodeId) {
   graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
   // Update whiteboard
   renderWhiteboard();
+  renderStrategyHouse();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1489,6 +1497,7 @@ function selectAllNodes() {
   renderNodeSelector();
   graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
   renderWhiteboard();
+  renderStrategyHouse();
 }
 
 function clearSelection() {
@@ -1496,6 +1505,7 @@ function clearSelection() {
   renderNodeSelector();
   graphInstance.nodeThreeObject(graphInstance.nodeThreeObject());
   renderWhiteboard();
+  renderStrategyHouse();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2143,9 +2153,29 @@ function getHouseColors() {
 function renderStrategyHouse() {
   if (!DATA) return;
   const container = document.getElementById("wb-body-house");
-  const nodes = DATA.graph.nodes;
+  // 当前 turn 下可见的节点
+  const filteredData = getFilteredData(currentTurn);
+  const allNodes = filteredData.nodes;
+  // 选中节点时只渲染选中的，无选择时渲染当前 turn 的全部
+  const nodes = selectedNodes.size > 0
+    ? allNodes.filter(n => selectedNodes.has(n.id))
+    : allNodes;
   const colors = getHouseColors();
   const isDark = !document.getElementById("wb-panel").classList.contains("light");
+
+  // 无节点时显示空态
+  if (nodes.length === 0) {
+    container.innerHTML = `<div class="wb-empty">Select nodes in the left panel to build Strategy House</div>`;
+    return;
+  }
+
+  // Update badge to show selected count
+  const badge = document.getElementById("wb-pattern-badge");
+  if (currentWbTab === "house") {
+    badge.textContent = selectedNodes.size > 0
+      ? `${nodes.length} of ${allNodes.length} nodes`
+      : `All ${allNodes.length} nodes`;
+  }
 
   // Group nodes by house part
   const groups = { roof: [], pillar: [], foundation: [], internal: [], signal: [], action: [], external: [] };
@@ -2154,9 +2184,12 @@ function renderStrategyHouse() {
     if (groups[part]) groups[part].push(n);
   });
 
-  // SVG dimensions
-  const W = 660, H = 560;
+  // SVG dimensions — height adjusts based on content
+  const W = 660;
   const pad = 16;
+  const hasActions = groups.action.length > 0;
+  const hasSignals = groups.signal.length > 0;
+  const H = 400 + (hasActions ? 54 : 0) + (hasSignals ? 54 : 0);
 
   // Roof
   const roofY = 20, roofH = 90;
@@ -2174,11 +2207,16 @@ function renderStrategyHouse() {
     fill="${c.bg}" stroke="${c.border}" stroke-width="2"/>`;
   svg += `<text x="${roofPeakX}" y="${roofY+28}" text-anchor="middle"
     font-size="10" fill="${c.text}" font-weight="700" letter-spacing="2">VISION</text>`;
-  groups.roof.forEach((n, i) => {
-    const text = n.label.length > 45 ? n.label.slice(0, 43) + "..." : n.label;
-    svg += `<text x="${roofPeakX}" y="${roofY+48+i*18}" text-anchor="middle"
-      font-size="12" fill="${c.label}" font-weight="500">${escSvg(text)}</text>`;
-  });
+  if (groups.roof.length > 0) {
+    groups.roof.forEach((n, i) => {
+      const text = n.label.length > 45 ? n.label.slice(0, 43) + "..." : n.label;
+      svg += `<text x="${roofPeakX}" y="${roofY+48+i*18}" text-anchor="middle"
+        font-size="12" fill="${c.label}" font-weight="500">${escSvg(text)}</text>`;
+    });
+  } else {
+    svg += `<text x="${roofPeakX}" y="${roofY+55}" text-anchor="middle"
+      font-size="11" fill="${c.text}" opacity="0.4" font-style="italic">No goals selected</text>`;
+  }
 
   // ── Pillars (Options/Mechanisms) ──
   const pillarY = roofBaseY + 6;
@@ -2190,20 +2228,28 @@ function renderStrategyHouse() {
   const pStartX = (W - totalPW) / 2;
   const pc = colors.pillar;
 
-  pillars.forEach((n, i) => {
-    const px = pStartX + i * (pW + 12);
-    svg += `<rect x="${px}" y="${pillarY}" width="${pW}" height="${pillarH}"
-      rx="4" fill="${pc.bg}" stroke="${pc.border}" stroke-width="1.5"/>`;
-    // Label
-    const label = n.label.length > 18 ? n.label.slice(0, 16) + ".." : n.label;
-    svg += `<text x="${px + pW/2}" y="${pillarY+22}" text-anchor="middle"
-      font-size="11" fill="${pc.label}" font-weight="600">${escSvg(label)}</text>`;
-    // Content wrapped
-    const lines = wrapText(n.content, 22);
-    lines.slice(0, 6).forEach((line, li) => {
-      svg += `<text x="${px+8}" y="${pillarY+40+li*15}" font-size="10" fill="${pc.text}">${escSvg(line)}</text>`;
+  if (pillars.length > 0) {
+    pillars.forEach((n, i) => {
+      const px = pStartX + i * (pW + 12);
+      svg += `<rect x="${px}" y="${pillarY}" width="${pW}" height="${pillarH}"
+        rx="4" fill="${pc.bg}" stroke="${pc.border}" stroke-width="1.5"/>`;
+      const label = n.label.length > 18 ? n.label.slice(0, 16) + ".." : n.label;
+      svg += `<text x="${px + pW/2}" y="${pillarY+22}" text-anchor="middle"
+        font-size="11" fill="${pc.label}" font-weight="600">${escSvg(label)}</text>`;
+      const lines = wrapText(n.content, 22);
+      lines.slice(0, 6).forEach((line, li) => {
+        svg += `<text x="${px+8}" y="${pillarY+40+li*15}" font-size="10" fill="${pc.text}">${escSvg(line)}</text>`;
+      });
     });
-  });
+  } else {
+    // Empty pillar placeholder
+    const epW = 120;
+    const epX = (W - epW) / 2;
+    svg += `<rect x="${epX}" y="${pillarY}" width="${epW}" height="${pillarH}"
+      rx="4" fill="none" stroke="${pc.border}" stroke-width="1" stroke-dasharray="6,3"/>`;
+    svg += `<text x="${W/2}" y="${pillarY + pillarH/2}" text-anchor="middle"
+      font-size="11" fill="${pc.text}" opacity="0.4" font-style="italic">No options selected</text>`;
+  }
 
   // ── Internal tags (Assumptions/Risks/Tensions) — floating between pillars ──
   const ic = colors.internal;
@@ -2228,22 +2274,28 @@ function renderStrategyHouse() {
   const foundH = 60;
   const fc = colors.foundation;
 
+  const founds = groups.foundation.slice(0, 5);
+
   svg += `<rect x="${pad}" y="${foundY}" width="${W-pad*2}" height="${foundH}"
-    rx="4" fill="${fc.bg}" stroke="${fc.border}" stroke-width="2"/>`;
+    rx="4" fill="${fc.bg}" stroke="${fc.border}" stroke-width="${founds.length > 0 ? 2 : 1}"
+    ${founds.length === 0 ? 'stroke-dasharray="6,3"' : ''}/>`;
   svg += `<text x="${pad+14}" y="${foundY+18}" font-size="10" fill="${fc.text}"
     font-weight="700" letter-spacing="2">FOUNDATION</text>`;
-
-  const founds = groups.foundation.slice(0, 5);
-  const fColW = (W - pad*2 - 28) / Math.max(founds.length, 1);
-  founds.forEach((n, i) => {
-    const fx = pad + 14 + i * fColW;
-    const label = n.label.length > 20 ? n.label.slice(0, 18) + ".." : n.label;
-    svg += `<text x="${fx}" y="${foundY+38}" font-size="11" fill="${fc.label}" font-weight="500">${escSvg(label)}</text>`;
-    if (n.content) {
-      const desc = n.content.length > 30 ? n.content.slice(0, 28) + ".." : n.content;
-      svg += `<text x="${fx}" y="${foundY+52}" font-size="9" fill="${fc.text}">${escSvg(desc)}</text>`;
-    }
-  });
+  if (founds.length > 0) {
+    const fColW = (W - pad*2 - 28) / Math.max(founds.length, 1);
+    founds.forEach((n, i) => {
+      const fx = pad + 14 + i * fColW;
+      const label = n.label.length > 20 ? n.label.slice(0, 18) + ".." : n.label;
+      svg += `<text x="${fx}" y="${foundY+38}" font-size="11" fill="${fc.label}" font-weight="500">${escSvg(label)}</text>`;
+      if (n.content) {
+        const desc = n.content.length > 30 ? n.content.slice(0, 28) + ".." : n.content;
+        svg += `<text x="${fx}" y="${foundY+52}" font-size="9" fill="${fc.text}">${escSvg(desc)}</text>`;
+      }
+    });
+  } else {
+    svg += `<text x="${W/2}" y="${foundY+38}" text-anchor="middle"
+      font-size="11" fill="${fc.text}" opacity="0.4" font-style="italic">No resources selected</text>`;
+  }
 
   // ── Actions + Signals (below foundation) ──
   const actionY = foundY + foundH + 18;
@@ -2280,7 +2332,14 @@ function renderStrategyHouse() {
   // ── Build full HTML ──
   const themeClass = isDark ? "dark" : "light";
 
-  let html = `<div class="strategy-house-container">${svg}</div>`;
+  // Selection hint
+  const hintColor = isDark ? "#555" : "#999";
+  const hintText = selectedNodes.size > 0
+    ? `Showing ${nodes.length} selected nodes`
+    : `Showing all ${nodes.length} nodes \u00b7 Select specific nodes for focused view`;
+
+  let html = `<div style="text-align:center;font-size:10px;color:${hintColor};padding:4px 0;letter-spacing:0.5px">${hintText}</div>`;
+  html += `<div class="strategy-house-container">${svg}</div>`;
 
   // Golden phrases
   html += `<div class="golden-section">
