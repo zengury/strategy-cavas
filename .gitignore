@@ -6,3 +6,4 @@ store/
 dist/
 build/
 .venv/
+.gstack/
