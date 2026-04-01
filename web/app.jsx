@@ -1,14 +1,51 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
 const ZONES = [
-  { key: "north_star", label: "North Star", fullWidth: true },
-  { key: "context",    label: "Context" },
-  { key: "options",    label: "Options" },
-  { key: "tradeoffs",  label: "Trade-offs" },
-  { key: "assumptions",label: "Assumptions" },
-  { key: "signals",    label: "Signals" },
-  { key: "next_moves", label: "Next Moves", fullWidth: true },
+  { key: "north_star", label: "North Star / 北极星", fullWidth: true },
+  { key: "context",    label: "Context / 背景" },
+  { key: "options",    label: "Options / 选项" },
+  { key: "tradeoffs",  label: "Trade-offs / 取舍" },
+  { key: "assumptions",label: "Assumptions / 假设" },
+  { key: "signals",    label: "Signals / 信号" },
+  { key: "next_moves", label: "Next Moves / 下一步", fullWidth: true },
 ];
+
+// node_type → canvas zone mapping
+const TYPE_TO_ZONE = {
+  goal: "north_star",
+  position: "north_star",
+  resource: "context",
+  constraint: "context",
+  evidence: "context",
+  stakeholder: "context",
+  option: "options",
+  mechanism: "options",
+  tension: "tradeoffs",
+  risk: "tradeoffs",
+  assumption: "assumptions",
+  pattern: "assumptions",
+  signal: "signals",
+  action: "next_moves",
+};
+
+// Convert flat node array → zone-keyed object for CanvasPanel
+function nodesToCanvasZones(nodes) {
+  const zones = {};
+  ZONES.forEach(z => { zones[z.key] = []; });
+  (nodes || []).forEach(n => {
+    const zone = TYPE_TO_ZONE[n.node_type] || "context";
+    zones[zone].push({
+      node_id: n.id,
+      content: n.label + (n.content ? " — " + n.content : ""),
+      confidence: n.confidence || 0.5,
+      locked: n.locked || false,
+      status: n.status || "active",
+      risk_level: n.risk_level || "",
+      source_skill: n.source_skill || "",
+    });
+  });
+  return zones;
+}
 
 const STAGE_LABELS = {
   explore: "Explore",
@@ -151,9 +188,12 @@ function CanvasNodeView({ node, onLock, isNew }) {
             title={node.locked ? "Unlock" : "Lock"}>
         {node.locked ? "\u{1F512}" : "\u{1F513}"}
       </span>
-      <div>{node.content}</div>
+      <div className="canvas-node-content">{node.content}</div>
+      {node.source_skill && (
+        <div className="canvas-node-skill">{node.source_skill}</div>
+      )}
       <div className="canvas-node-confidence">
-        confidence {Math.round(node.confidence * 100)}%
+        confidence {Math.round((node.confidence || 0.5) * 100)}%
       </div>
     </div>
   );
@@ -194,7 +234,7 @@ function CanvasPanel({ canvas, onLock, newNodeIds }) {
 
 // ── Strategy House SVG Renderer ─────────────────────────────
 
-function StrategyHouseSVG({ graphData }) {
+function StrategyHouseHTML({ graphData }) {
   const nodes = graphData?.nodes || [];
   if (nodes.length === 0) {
     return (
@@ -211,157 +251,73 @@ function StrategyHouseSVG({ graphData }) {
     groups[part].push(n);
   });
 
-  // SVG 尺寸
-  const W = 720, H = 580;
-  const pad = 20;
+  const HouseNode = ({ node, colors }) => (
+    <div className="house-node" style={{
+      background: colors.bg, border: `1px solid ${colors.border}`,
+      borderRadius: "6px", padding: "8px 10px", marginBottom: "6px",
+    }}>
+      <div style={{ fontSize: "10px", fontWeight: "600", color: colors.text, textTransform: "uppercase", marginBottom: "2px" }}>
+        {node.node_type}
+        {node.source_skill && <span style={{ fontWeight: "400", opacity: 0.6, marginLeft: "6px", textTransform: "none" }}>via {node.source_skill}</span>}
+      </div>
+      <div style={{ fontSize: "13px", fontWeight: "600", color: colors.text }}>{node.label}</div>
+      <div style={{ fontSize: "11px", color: colors.text, opacity: 0.7, marginTop: "2px" }}>{node.content}</div>
+      <div style={{ fontSize: "10px", color: colors.text, opacity: 0.5, marginTop: "4px" }}>
+        confidence {Math.round((node.confidence || 0.5) * 100)}%
+      </div>
+    </div>
+  );
 
-  // 屋顶三角形
-  const roofY = 30;
-  const roofH = 100;
-  const roofPeakX = W / 2;
-  const roofBaseY = roofY + roofH;
-  const roofTriangle = `${roofPeakX},${roofY} ${pad},${roofBaseY} ${W - pad},${roofBaseY}`;
-
-  // 柱子区域
-  const pillarY = roofBaseY + 8;
-  const pillarH = 180;
-  const pillarCount = Math.max(groups.pillar.length, 2);
-  const pillarW = Math.min(120, (W - pad * 2 - 40) / pillarCount - 16);
-
-  // 地基
-  const foundY = pillarY + pillarH + 8;
-  const foundH = 70;
-
-  // 内部 (假设/风险/张力) — 柱子之间
-  const internalY = pillarY + 10;
-  const internalH = pillarH - 20;
-
-  // 行动 + 信号 — 地基下方
-  const actionY = foundY + foundH + 16;
+  const Section = ({ title, icon, nodes, colors, style }) => {
+    if (nodes.length === 0) return null;
+    return (
+      <div className="house-section" style={style}>
+        <div className="house-section-header" style={{ color: colors.text }}>
+          {icon} {title} <span style={{ opacity: 0.5 }}>({nodes.length})</span>
+        </div>
+        {nodes.map(n => <HouseNode key={n.id} node={n} colors={colors} />)}
+      </div>
+    );
+  };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="strategy-house-svg" xmlns="http://www.w3.org/2000/svg">
-      {/* 屋顶 - 愿景/目标 */}
-      <polygon
-        points={roofTriangle}
-        fill={HOUSE_COLORS.roof.bg}
-        stroke={HOUSE_COLORS.roof.border}
-        strokeWidth="2"
-      />
-      <text x={roofPeakX} y={roofY + 30} textAnchor="middle"
-            fontSize="11" fill={HOUSE_COLORS.roof.text} fontWeight="600">VISION</text>
-      {groups.roof.map((n, i) => (
-        <text key={n.id} x={roofPeakX} y={roofY + 50 + i * 18}
-              textAnchor="middle" fontSize="12" fill={HOUSE_COLORS.roof.text}>
-          {n.label.length > 40 ? n.label.slice(0, 38) + "..." : n.label}
-        </text>
-      ))}
+    <div className="strategy-house-html">
+      {/* Roof - Vision */}
+      <div className="house-roof">
+        <div className="house-roof-label">VISION / 愿景</div>
+        {groups.roof.map(n => <HouseNode key={n.id} node={n} colors={HOUSE_COLORS.roof} />)}
+        {groups.roof.length === 0 && <div className="house-placeholder">Awaiting goal definition...</div>}
+      </div>
 
-      {/* 柱子 - 战略选项 */}
-      {groups.pillar.map((n, i) => {
-        const totalW = pillarCount * (pillarW + 16) - 16;
-        const startX = (W - totalW) / 2;
-        const px = startX + i * (pillarW + 16);
-        return (
-          <g key={n.id}>
-            <rect x={px} y={pillarY} width={pillarW} height={pillarH}
-                  rx="4" fill={HOUSE_COLORS.pillar.bg}
-                  stroke={HOUSE_COLORS.pillar.border} strokeWidth="1.5" />
-            <foreignObject x={px + 6} y={pillarY + 8} width={pillarW - 12} height={pillarH - 16}>
-              <div xmlns="http://www.w3.org/1999/xhtml" style={{
-                fontSize: "11px", color: HOUSE_COLORS.pillar.text,
-                lineHeight: "1.4", overflow: "hidden", height: "100%",
-                fontWeight: "600", marginBottom: "4px",
-              }}>
-                {n.label}
-                <div style={{ fontWeight: "400", fontSize: "10px", marginTop: "6px", opacity: 0.8 }}>
-                  {n.content.length > 80 ? n.content.slice(0, 78) + "..." : n.content}
-                </div>
-              </div>
-            </foreignObject>
-          </g>
-        );
-      })}
+      {/* Main body - 3 column layout */}
+      <div className="house-body">
+        <div className="house-body-left">
+          <Section title="Pillars / 支柱" icon="&#9648;" nodes={groups.pillar} colors={HOUSE_COLORS.pillar} />
+        </div>
+        <div className="house-body-center">
+          <Section title="Tensions & Risks / 张力与风险" icon="&#9888;" nodes={groups.internal} colors={HOUSE_COLORS.internal} />
+        </div>
+        <div className="house-body-right">
+          <Section title="External / 外部" icon="&#9673;" nodes={groups.external} colors={HOUSE_COLORS.external} />
+        </div>
+      </div>
 
-      {/* 内部标签 — 假设/风险/张力（柱子间区域标注） */}
-      {groups.internal.length > 0 && (
-        <g>
-          {groups.internal.slice(0, 4).map((n, i) => {
-            const ix = W - pad - 160;
-            const iy = internalY + i * 40;
-            const colors = HOUSE_COLORS.internal;
-            return (
-              <g key={n.id}>
-                <rect x={ix} y={iy} width={150} height={32}
-                      rx="4" fill={colors.bg} stroke={colors.border} strokeWidth="1"
-                      strokeDasharray="4,2" />
-                <text x={ix + 8} y={iy + 14} fontSize="9" fill={colors.text} fontWeight="600">
-                  {n.node_type.toUpperCase()}
-                </text>
-                <text x={ix + 8} y={iy + 26} fontSize="10" fill={colors.text}>
-                  {n.label.length > 20 ? n.label.slice(0, 18) + "..." : n.label}
-                </text>
-              </g>
-            );
-          })}
-        </g>
-      )}
+      {/* Foundation */}
+      <div className="house-foundation">
+        <div className="house-section-header" style={{ color: HOUSE_COLORS.foundation.text }}>
+          FOUNDATION / 地基 <span style={{ opacity: 0.5 }}>({groups.foundation.length})</span>
+        </div>
+        <div className="house-foundation-grid">
+          {groups.foundation.map(n => <HouseNode key={n.id} node={n} colors={HOUSE_COLORS.foundation} />)}
+        </div>
+      </div>
 
-      {/* 地基 - 资源/能力 */}
-      <rect x={pad} y={foundY} width={W - pad * 2} height={foundH}
-            rx="4" fill={HOUSE_COLORS.foundation.bg}
-            stroke={HOUSE_COLORS.foundation.border} strokeWidth="2" />
-      <text x={pad + 12} y={foundY + 18} fontSize="11"
-            fill={HOUSE_COLORS.foundation.text} fontWeight="600">FOUNDATION</text>
-      {groups.foundation.slice(0, 4).map((n, i) => {
-        const fx = pad + 12 + i * 170;
-        return (
-          <text key={n.id} x={fx} y={foundY + 38} fontSize="11"
-                fill={HOUSE_COLORS.foundation.text}>
-            {n.label.length > 22 ? n.label.slice(0, 20) + ".." : n.label}
-          </text>
-        );
-      })}
-
-      {/* 行动步骤 + 信号指标 */}
-      {(groups.action.length > 0 || groups.signal.length > 0) && (
-        <g>
-          <text x={pad} y={actionY} fontSize="11" fill="#666" fontWeight="600">
-            NEXT MOVES
-          </text>
-          {groups.action.map((n, i) => (
-            <g key={n.id}>
-              <rect x={pad + i * 230} y={actionY + 6} width={220} height={36}
-                    rx="4" fill={HOUSE_COLORS.action.bg}
-                    stroke={HOUSE_COLORS.action.border} strokeWidth="1" />
-              <text x={pad + i * 230 + 10} y={actionY + 28} fontSize="11"
-                    fill={HOUSE_COLORS.action.text}>
-                {n.label.length > 30 ? n.label.slice(0, 28) + ".." : n.label}
-              </text>
-            </g>
-          ))}
-
-          {groups.signal.length > 0 && (
-            <>
-              <text x={pad} y={actionY + 58} fontSize="11" fill="#666" fontWeight="600">
-                VALIDATION SIGNALS
-              </text>
-              {groups.signal.map((n, i) => (
-                <g key={n.id}>
-                  <rect x={pad + i * 230} y={actionY + 64} width={220} height={36}
-                        rx="4" fill={HOUSE_COLORS.signal.bg}
-                        stroke={HOUSE_COLORS.signal.border} strokeWidth="1" />
-                  <text x={pad + i * 230 + 10} y={actionY + 86} fontSize="11"
-                        fill={HOUSE_COLORS.signal.text}>
-                    {n.label.length > 30 ? n.label.slice(0, 28) + ".." : n.label}
-                  </text>
-                </g>
-              ))}
-            </>
-          )}
-        </g>
-      )}
-    </svg>
+      {/* Bottom: Actions + Signals */}
+      <div className="house-bottom">
+        <Section title="Next Moves / 下一步" icon="&#9654;" nodes={groups.action} colors={HOUSE_COLORS.action} />
+        <Section title="Validation Signals / 验证信号" icon="&#9678;" nodes={groups.signal} colors={HOUSE_COLORS.signal} />
+      </div>
+    </div>
   );
 }
 
@@ -406,7 +362,7 @@ function NamedConcepts({ concepts }) {
 function StrategyHousePanel({ graphData, goldenPhrases, namedConcepts }) {
   return (
     <div className="strategy-house-panel">
-      <StrategyHouseSVG graphData={graphData} />
+      <StrategyHouseHTML graphData={graphData} />
       <GoldenPhrases phrases={goldenPhrases} />
       <NamedConcepts concepts={namedConcepts} />
     </div>
@@ -457,14 +413,28 @@ function App() {
     fetch("/static/demo_graph.json")
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.graph) {
+        if (!data) return;
+        if (data.graph) {
           setGraphData(data.graph);
+          // Also populate canvas zones from flat node array
+          if (data.graph.nodes) {
+            setCanvas({ nodes: nodesToCanvasZones(data.graph.nodes) });
+          }
         }
-        if (data?.golden_phrases) {
+        if (data.golden_phrases) {
           setGoldenPhrases(data.golden_phrases);
         }
-        if (data?.named_concepts) {
+        if (data.named_concepts) {
           setNamedConcepts(data.named_concepts);
+        }
+        // Load demo conversation into chat
+        if (data.conversation) {
+          const msgs = [];
+          data.conversation.forEach(turn => {
+            if (turn.user) msgs.push({ speaker: "user", text: turn.user });
+            if (turn.coach) msgs.push({ speaker: "assistant", text: turn.coach });
+          });
+          setMessages(msgs);
         }
       })
       .catch(() => {}); // no demo data, fine

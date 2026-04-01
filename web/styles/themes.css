@@ -390,14 +390,6 @@ html, body, #root {
   padding: 16px;
 }
 
-.strategy-house-svg {
-  width: 100%;
-  max-width: 720px;
-  height: auto;
-  margin: 0 auto;
-  display: block;
-}
-
 .house-empty {
   display: flex;
   align-items: center;
@@ -406,6 +398,114 @@ html, body, #root {
   color: var(--text-muted);
   font-size: 14px;
   font-style: italic;
+}
+
+/* Strategy House HTML layout */
+.strategy-house-html {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.house-roof {
+  background: #FFF8E1;
+  border: 2px solid #FFD54F;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+}
+
+[data-theme="minimal"] .house-roof {
+  background: #2a2210;
+  border-color: #8b6914;
+}
+
+.house-roof-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #F57F17;
+  margin-bottom: 10px;
+}
+
+.house-placeholder {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.house-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  border-left: 2px solid var(--border);
+  border-right: 2px solid var(--border);
+  background: var(--bg-secondary);
+  min-height: 120px;
+}
+
+.house-body-left,
+.house-body-center,
+.house-body-right {
+  min-height: 80px;
+}
+
+.house-section-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.house-foundation {
+  background: #E3F2FD;
+  border: 2px solid #64B5F6;
+  border-top: none;
+  padding: 12px;
+}
+
+[data-theme="minimal"] .house-foundation {
+  background: #0d1a2a;
+  border-color: #1565C0;
+}
+
+.house-foundation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.house-bottom {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.house-node {
+  transition: transform 0.15s ease;
+}
+
+.house-node:hover {
+  transform: translateY(-1px);
+}
+
+.canvas-node-skill {
+  font-size: 10px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+.canvas-node-content {
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* ── Golden Phrases ─────────────────────── */
