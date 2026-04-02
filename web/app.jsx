@@ -256,10 +256,13 @@ function Graph3DPanel({ graphData }) {
     const graph = ForceGraph3D({ controlType: "orbit" })(containerRef.current)
       .backgroundColor("rgba(0,0,0,0)")
       .showNavInfo(false)
-      .nodeLabel(n => `<div style="background:#222;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;max-width:200px">
-        <b>${n.label}</b><br/><span style="opacity:0.7">${n.node_type}</span>
-        ${n.content ? `<br/><span style="opacity:0.5;font-size:11px">${n.content.slice(0, 80)}</span>` : ""}
-      </div>`)
+      .nodeLabel(n => {
+        const esc = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        return `<div style="background:#222;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;max-width:200px">
+        <b>${esc(n.label)}</b><br/><span style="opacity:0.7">${esc(n.node_type)}</span>
+        ${n.content ? `<br/><span style="opacity:0.5;font-size:11px">${esc(n.content.slice(0, 80))}</span>` : ""}
+      </div>`;
+      })
       .nodeColor(n => NODE_COLORS[n.node_type] || "#999")
       .nodeVal(n => (n.weight || 1) * 3)
       .nodeOpacity(0.9)
@@ -765,15 +768,14 @@ function StatusBar({ stage, confidence, connected, projectName }) {
 // ════════════════════════════════════════════════════════════════
 
 function App() {
-  // Load saved projects
-  const saved = loadProjects();
-  const initialProjects = saved?.projects?.length > 0
-    ? saved.projects
-    : [createEmptyProject("Demo Session")];
-  const initialActiveId = saved?.activeId || initialProjects[0].id;
-
-  const [projects, setProjects] = useState(initialProjects);
-  const [activeId, setActiveId] = useState(initialActiveId);
+  const [projects, setProjects] = useState(() => {
+    const saved = loadProjects();
+    return saved?.projects?.length > 0 ? saved.projects : [createEmptyProject("Demo Session")];
+  });
+  const [activeId, setActiveId] = useState(() => {
+    const saved = loadProjects();
+    return saved?.activeId || projects[0]?.id;
+  });
   const [thinking, setThinking] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
 
@@ -811,7 +813,7 @@ function App() {
             if (turn.coach) msgs.push({ speaker: "assistant", text: turn.coach });
           });
           updates.messages = msgs;
-          updates.name = "AI 教育创业决策 (Demo)";
+          updates.name = "气候科技创业决策 (Demo)";
         }
         if (Object.keys(updates).length > 0) {
           updateProject(updates);
