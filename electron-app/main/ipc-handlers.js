@@ -20,8 +20,8 @@ function initEngine() {
   const model = store.getModel();
   if (!apiKey) { engine = null; return; }
 
-  const Anthropic = require('@anthropic-ai/sdk').default || require('@anthropic-ai/sdk');
-  const client = new Anthropic({ apiKey });
+  const OpenAI = require('openai').default || require('openai');
+  const client = new OpenAI({ apiKey, baseURL: 'https://api.deepseek.com' });
   const registry = new SkillRegistry(getSkillsDir());
   const router = new SkillRouter(registry, client, model);
   const contextBus = new ContextBus();

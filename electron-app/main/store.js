@@ -3,7 +3,7 @@ const Store = require('electron-store');
 const store = new Store({
   schema: {
     apiKey: { type: 'string', default: '' },
-    model: { type: 'string', default: 'claude-sonnet-4-5-20250514' },
+    model: { type: 'string', default: 'deepseek-chat' },
   },
 });
 

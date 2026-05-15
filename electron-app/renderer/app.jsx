@@ -135,7 +135,7 @@ function esc(s) {
 // Column 1: Project Sidebar
 // ════════════════════════════════════════════════════════════════
 
-function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelete }) {
+function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelete, flex, onExpand, isExpanded, collapsed }) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
 
@@ -143,8 +143,11 @@ function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelet
   const commitRename = () => { if (editName.trim()) onRename(editingId, editName.trim()); setEditingId(null); };
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-header"><span className="sidebar-title">Projects</span></div>
+    <div className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('sidebar') : undefined}>
+      <div className="sidebar-header" onDoubleClick={() => onExpand('sidebar')}>
+        <span className="sidebar-title">Projects</span></div>
       <button className="sidebar-new-btn" onClick={onNew}>+ New Project</button>
       <div className="sidebar-list">
         {projects.map(p => (
@@ -179,7 +182,7 @@ function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelet
 // Column 2: Chat Panel
 // ════════════════════════════════════════════════════════════════
 
-function ChatPanel({ messages, onSend, thinking }) {
+function ChatPanel({ messages, onSend, thinking, flex, onExpand, isExpanded, collapsed }) {
   const [input, setInput] = useState("");
   const endRef = useRef(null);
 
@@ -193,8 +196,10 @@ function ChatPanel({ messages, onSend, thinking }) {
   };
 
   return (
-    <div className="col col-chat">
-      <div className="col-header">Conversation / 对话</div>
+    <div className={`col col-chat${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('chat') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('chat')}>Conversation / 对话</div>
       <div className="chat-messages">
         {messages.length === 0 && <div className="chat-empty">Start a conversation about the decision you're facing...</div>}
         {messages.map((msg, i) => (
@@ -220,7 +225,7 @@ function ChatPanel({ messages, onSend, thinking }) {
 // Column 3: 3D Force Graph (with glow spheres + canvas labels)
 // ════════════════════════════════════════════════════════════════
 
-function Graph3DPanel({ graphData, selectedNodeId, onNodeSelect }) {
+function Graph3DPanel({ graphData, selectedNodeId, onNodeSelect, flex, onExpand, isExpanded, collapsed }) {
   const containerRef = useRef(null);
   const graphRef = useRef(null);
 
@@ -339,8 +344,10 @@ function Graph3DPanel({ graphData, selectedNodeId, onNodeSelect }) {
   const linkCount = graphData?.links?.length || 0;
 
   return (
-    <div className="col col-graph">
-      <div className="col-header">
+    <div className={`col col-graph${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('graph') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('graph')}>
         Node Graph / 节点图
         <span className="col-header-badge">{nodeCount} nodes / {linkCount} edges</span>
       </div>
@@ -364,7 +371,7 @@ function Graph3DPanel({ graphData, selectedNodeId, onNodeSelect }) {
 // Column 4: Node Selector Panel (bilingual, grouped by type)
 // ════════════════════════════════════════════════════════════════
 
-function NodeSelectorPanel({ graphData, selectedNodeId, onNodeSelect }) {
+function NodeSelectorPanel({ graphData, selectedNodeId, onNodeSelect, flex, onExpand, isExpanded, collapsed }) {
   const nodes = graphData?.nodes || [];
 
   const grouped = useMemo(() => {
@@ -378,8 +385,10 @@ function NodeSelectorPanel({ graphData, selectedNodeId, onNodeSelect }) {
   }, [nodes]);
 
   return (
-    <div className="col col-nodes">
-      <div className="col-header">
+    <div className={`col col-nodes${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('nodes') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('nodes')}>
         Nodes / 节点选择
         <span className="col-header-badge">{nodes.length}</span>
       </div>
@@ -539,7 +548,7 @@ function drawStrategyHouse(canvas, nodes, isDark) {
   ctx.putImageData(imgData, 0, 0);
 }
 
-function StrategyHousePanel({ graphData, theme }) {
+function StrategyHousePanel({ graphData, theme, flex, onExpand, isExpanded, collapsed }) {
   const canvasRef = useRef(null);
   const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -561,8 +570,10 @@ function StrategyHousePanel({ graphData, theme }) {
   };
 
   return (
-    <div className="col col-house">
-      <div className="col-header">
+    <div className={`col col-house${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('house') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('house')}>
         Strategy House / 战略屋
         {generated && <button className="download-btn" onClick={handleDownload}>&#8681; PNG</button>}
       </div>
@@ -590,12 +601,12 @@ function StrategyHousePanel({ graphData, theme }) {
 
 function SettingsModal({ onClose }) {
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("claude-sonnet-4-5-20250514");
+  const [model, setModel] = useState("deepseek-chat");
 
   useEffect(() => {
     if (!window.electronAPI) return;
     window.electronAPI.getApiKey().then(k => setApiKey(k || ""));
-    window.electronAPI.getModel().then(m => setModel(m || "claude-sonnet-4-5-20250514"));
+    window.electronAPI.getModel().then(m => setModel(m || "deepseek-chat"));
   }, []);
 
   const handleSave = async () => {
@@ -611,15 +622,14 @@ function SettingsModal({ onClose }) {
       <div className="settings-modal" onClick={e => e.stopPropagation()}>
         <h2>Settings / 设置</h2>
         <div className="settings-field">
-          <label>Anthropic API Key</label>
-          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk-ant-..." />
+          <label>DeepSeek API Key</label>
+          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="sk-..." />
         </div>
         <div className="settings-field">
           <label>Model</label>
           <select value={model} onChange={e => setModel(e.target.value)}>
-            <option value="claude-sonnet-4-5-20250514">Claude Sonnet 4.5</option>
-            <option value="claude-opus-4-7">Claude Opus 4.7</option>
-            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+            <option value="deepseek-chat">DeepSeek Chat</option>
+            <option value="deepseek-reasoner">DeepSeek Reasoner</option>
           </select>
         </div>
         <div className="settings-actions">
@@ -670,9 +680,24 @@ function App() {
   const [demoLoaded, setDemoLoaded] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [expandedCol, setExpandedCol] = useState(null);
 
   const project = projects.find(p => p.id === activeId) || projects[0];
   const { connected, send, on } = useIPC();
+
+  const RATIOS = {
+    null:      [2, 8, 3, 2, 1],
+    sidebar:   [8, 2, 3, 1, 1],
+    graph:     [1, 2, 8, 2, 1],
+    nodes:     [1, 1, 2, 8, 2],
+    house:     [1, 1, 2, 2, 8],
+  };
+  const flexes = RATIOS[expandedCol] || RATIOS[null];
+  const handleExpand = (col) => setExpandedCol(prev => prev === col ? null : col);
+  const isExpanded = expandedCol !== null;
+  const total = flexes.reduce((a, b) => a + b, 0);
+  const [sf, cf, gf, nf, hf] = flexes.map(f => (f / total * 100).toFixed(1));
+  const collapsed = [sf, cf, gf, nf, hf].map(f => parseFloat(f) < 15);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -760,7 +785,7 @@ function App() {
   return (
     <div className="app">
       <div className="app-header">
-        <h1>Strategic Canvas</h1>
+        <h1 onClick={() => setExpandedCol(null)} style={{cursor:'pointer'}}>Strategic Canvas</h1>
         <div className="header-right">
           <span className="node-count">{project.graphData?.nodes?.length || 0} nodes</span>
           <button className="theme-toggle" onClick={() => setShowSettings(true)} title="Settings">&#9881;</button>
@@ -775,11 +800,20 @@ function App() {
           onSelect={setActiveId} onNew={handleNewProject}
           onRename={(id, name) => setProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p))}
           onDelete={(id) => { setProjects(prev => { const next = prev.filter(p => p.id !== id); if (activeId === id && next.length > 0) setActiveId(next[0].id); return next; }); }}
+          flex={sf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[0]}
         />
-        <ChatPanel messages={project.messages} onSend={handleSend} thinking={thinking} />
-        <Graph3DPanel graphData={project.graphData} selectedNodeId={selectedNodeId} onNodeSelect={setSelectedNodeId} />
-        <NodeSelectorPanel graphData={project.graphData} selectedNodeId={selectedNodeId} onNodeSelect={setSelectedNodeId} />
-        <StrategyHousePanel graphData={project.graphData} theme={theme} />
+        <ChatPanel messages={project.messages} onSend={handleSend} thinking={thinking}
+          flex={cf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[1]}
+        />
+        <Graph3DPanel graphData={project.graphData} selectedNodeId={selectedNodeId} onNodeSelect={setSelectedNodeId}
+          flex={gf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[2]}
+        />
+        <NodeSelectorPanel graphData={project.graphData} selectedNodeId={selectedNodeId} onNodeSelect={setSelectedNodeId}
+          flex={nf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[3]}
+        />
+        <StrategyHousePanel graphData={project.graphData} theme={theme}
+          flex={hf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[4]}
+        />
       </div>
       <StatusBar
         stage={project.stage || "explore"} confidence={project.confidence || 0}

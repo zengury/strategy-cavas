@@ -14,7 +14,7 @@ class SkillRouter {
   constructor(registry, client, model) {
     this.registry = registry;
     this.client = client;
-    this.model = model || "claude-sonnet-4-5-20250514";
+    this.model = model || "deepseek-chat";
     this.MAX_SKILLS_PER_TURN = 3;
     this._fallbackSkill = "general_advisor";
   }
@@ -73,8 +73,11 @@ class SkillRouter {
     const prompt = `从技能目录选 1~3 个最相关技能。\n\n用户: ${turn.text}\n阶段: ${turn.stage}\n画布: ${brief}\n\n技能:\n${catalog}\n\n返回 JSON: [{"skill_id": "xxx", "reason": "..."}]`;
 
     try {
-      const response = await this.client.messages.create({ model: this.model, max_tokens: 512, messages: [{ role: "user", content: prompt }] });
-      const text = response.content[0].text;
+      const response = await this.client.chat.completions.create({
+        model: this.model, max_tokens: 512, temperature: 0.0,
+        messages: [{ role: "user", content: prompt }],
+      });
+      const text = response.choices[0].message.content;
       const m = text.match(/\[[\s\S]*\]/);
       if (m) {
         const items = JSON.parse(m[0]);

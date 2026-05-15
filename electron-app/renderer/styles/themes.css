@@ -142,13 +142,14 @@ html, body, #root {
   min-height: 0;
 }
 
-/* Shared column styles */
+/* Shared column styles — with smooth resize transition */
 .col {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--border);
   background: var(--bg-secondary);
+  transition: flex 0.35s ease;
 }
 
 .col:last-child { border-right: none; }
@@ -167,6 +168,8 @@ html, body, #root {
   align-items: center;
   justify-content: space-between;
   min-height: 34px;
+  cursor: pointer;
+  user-select: none;
 }
 
 .col-header-badge {
@@ -176,27 +179,96 @@ html, body, #root {
   font-family: var(--font-mono);
 }
 
-/* Column widths */
-.col-chat      { flex: 0 0 22%; min-width: 260px; }
-.col-graph     { flex: 0 0 28%; min-width: 300px; background: #0a0a0f; }
-.col-nodes     { flex: 0 0 22%; min-width: 220px; }
-.col-house     { flex: 0 0 28%; min-width: 260px; }
+/* Column widths — controlled by inline flex from JS */
+.col-chat      { min-width: 36px; }
+.col-graph     { min-width: 36px; background: #0a0a0f; }
+.col-nodes     { min-width: 36px; }
+.col-house     { min-width: 36px; }
 
 /* Keep old class name for backwards compat */
-.col-summary   { flex: 0 0 22%; min-width: 220px; }
+.col-summary   { min-width: 36px; }
+
+/* ── Collapsed tab mode ─────────────────────────────────────── */
+
+.col-collapsed {
+  min-width: 36px !important;
+  max-width: 40px;
+  cursor: pointer;
+}
+
+.col-collapsed .col-header {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 10px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+  gap: 0;
+  min-height: 0;
+}
+
+.col-collapsed .col-header:hover {
+  background: var(--bg-secondary);
+  border-left-color: var(--accent);
+}
+
+.col-collapsed .col-header-badge {
+  display: none;
+}
+
+/* Hide all content except header when collapsed */
+.col-collapsed > :not(.col-header) {
+  display: none !important;
+}
+
+/* Sidebar collapsed */
+.sidebar-collapsed {
+  min-width: 36px !important;
+  max-width: 40px;
+}
+
+.sidebar-collapsed .sidebar-header {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 10px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sidebar-collapsed .sidebar-header:hover {
+  border-left-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.sidebar-collapsed > :not(.sidebar-header) {
+  display: none !important;
+}
 
 /* ════════════════════════════════════════════════════════════════
    Column 1: Sidebar
    ════════════════════════════════════════════════════════════════ */
 
 .sidebar {
-  width: var(--sidebar-w);
+  min-width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
   background: var(--bg-primary);
   overflow: hidden;
+  transition: flex 0.35s ease;
 }
 
 .sidebar-header {
@@ -205,6 +277,8 @@ html, body, #root {
   min-height: 34px;
   display: flex;
   align-items: center;
+  cursor: pointer;
+  user-select: none;
 }
 
 .sidebar-title {
@@ -1005,3 +1079,98 @@ html, body, #root {
     border-bottom: 1px solid var(--border);
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Settings Modal (Electron only)
+   ════════════════════════════════════════════════════════════════ */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.settings-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  min-width: 360px;
+  max-width: 440px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.settings-modal h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.settings-field {
+  margin-bottom: 14px;
+}
+
+.settings-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.settings-field input,
+.settings-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font);
+  outline: none;
+}
+
+.settings-field input:focus,
+.settings-field select:focus {
+  border-color: var(--accent);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.btn-secondary:hover { background: var(--bg-primary); }
+
+.btn-primary {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.btn-primary:hover { background: var(--accent-dark); }

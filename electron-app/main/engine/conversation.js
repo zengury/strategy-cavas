@@ -45,7 +45,7 @@ class ConversationEngine {
     this.contextBus = contextBus;
     this.canvasManager = canvasManager;
     this.client = client;
-    this.model = model || "claude-sonnet-4-5-20250514";
+    this.model = model || "deepseek-chat";
     this._stage = STAGE.EXPLORE;
   }
 
@@ -102,8 +102,11 @@ class ConversationEngine {
 
     const userMsg = `## 对话历史\n${convCtx}\n## 当前用户输入\n${userText}\n\n## 当前决策阶段\n${this._stage}\n\n## 当前画布状态\n${JSON.stringify(brief, null, 1)}\n\n## 本轮激活技能\n${skillsBlock}\n\n## 路由理由\n${JSON.stringify(invocations.map(i => ({ skill: i.skill_id, reason: i.reason })))}\n\n请按照系统提示词的格式输出你的回复。`;
 
-    const resp = await this.client.messages.create({ model: this.model, max_tokens: 4096, system: SYSTEM_PROMPT, messages: [{ role: "user", content: userMsg }] });
-    return resp.content[0].text;
+    const resp = await this.client.chat.completions.create({
+      model: this.model, max_tokens: 4096, temperature: 0.7,
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userMsg }],
+    });
+    return resp.choices[0].message.content;
   }
 
   _parseResponse(text) {
