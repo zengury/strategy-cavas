@@ -1,0 +1,36 @@
+{
+  "name": "strategic-canvas",
+  "version": "1.0.0",
+  "description": "AI Strategic Coaching — Knowledge Graph & Strategic Visualization",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac",
+    "build:dmg": "electron-builder --mac dmg"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0"
+  },
+  "build": {
+    "appId": "com.strategiccanvas.app",
+    "productName": "Strategic Canvas",
+    "mac": {
+      "category": "public.app-category.business",
+      "target": "dmg"
+    },
+    "dmg": {
+      "title": "Strategic Canvas",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "files": ["main/**/*", "renderer/**/*"],
+    "extraResources": [{ "from": "../skills/", "to": "skills/" }]
+  }
+}
