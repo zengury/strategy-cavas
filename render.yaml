@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: strategy-canvas
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false

@@ -171,8 +171,9 @@ async def websocket_chat(ws: WebSocket):
 
 
 if __name__ == "__main__":
+    import os
     parser = argparse.ArgumentParser(description="Strategic Canvas Live")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=int(os.getenv("PORT", 8000)))
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()
