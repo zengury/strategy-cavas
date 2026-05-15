@@ -209,8 +209,8 @@ function ChatPanel({ messages, onSend, thinking, flex, onExpand, isExpanded, col
     <div className={`col col-chat${collapsed ? ' col-collapsed' : ''}${medium ? ' col-medium' : ''}`}
       style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
       onClick={collapsed ? () => onExpand('chat') : undefined}>
-      {medium && <div className="col-tab-strip" onClick={() => onExpand('chat')}>Chat / 对话</div>}
-      <div className="col-header" onDoubleClick={() => onExpand('chat')}>Chat / 对话</div>
+      {medium && <div className="col-tab-strip" onClick={() => onExpand('chat')}>CHAT / 对话</div>}
+      <div className="col-header" onDoubleClick={() => onExpand('chat')}>CHAT / 对话</div>
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="chat-empty">Start a conversation about the decision you're facing...</div>
@@ -315,9 +315,9 @@ function Graph3DPanel({ graphData, flex, onExpand, isExpanded, collapsed, medium
     <div className={`col col-graph${collapsed ? ' col-collapsed' : ''}${medium ? ' col-medium' : ''}`}
       style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
       onClick={collapsed ? () => onExpand('graph') : undefined}>
-      {medium && <div className="col-tab-strip" onClick={() => onExpand('graph')}>Graph / 节点图</div>}
+      {medium && <div className="col-tab-strip" onClick={() => onExpand('graph')}>GRAPH / 节点图</div>}
       <div className="col-header" onDoubleClick={() => onExpand('graph')}>
-        Graph / 节点图
+        GRAPH / 节点图
         <span className="col-header-badge">{nodeCount} nodes / {linkCount} edges</span>
       </div>
       <div className="graph3d-container" ref={containerRef}>
@@ -371,8 +371,8 @@ function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confiden
     <div className={`col col-summary${collapsed ? ' col-collapsed' : ''}${medium ? ' col-medium' : ''}`}
       style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
       onClick={collapsed ? () => onExpand('summary') : undefined}>
-      {medium && <div className="col-tab-strip" onClick={() => onExpand('summary')}>Analysis / 分析</div>}
-      <div className="col-header" onDoubleClick={() => onExpand('summary')}>Analysis / 分析</div>
+      {medium && <div className="col-tab-strip" onClick={() => onExpand('summary')}>ANALYSIS / 分析</div>}
+      <div className="col-header" onDoubleClick={() => onExpand('summary')}>ANALYSIS / 分析</div>
       <div className="summary-scroll">
         {/* Stage & Confidence */}
         <div className="summary-card">
@@ -712,9 +712,9 @@ function StrategyHousePanel({ graphData, flex, onExpand, isExpanded, collapsed, 
     <div className={`col col-house${collapsed ? ' col-collapsed' : ''}${medium ? ' col-medium' : ''}`}
       style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
       onClick={collapsed ? () => onExpand('house') : undefined}>
-      {medium && <div className="col-tab-strip" onClick={() => onExpand('house')}>House / 战略屋</div>}
+      {medium && <div className="col-tab-strip" onClick={() => onExpand('house')}>HOUSE / 战略屋</div>}
       <div className="col-header" onDoubleClick={() => onExpand('house')}>
-        House / 战略屋
+        HOUSE / 战略屋
         {generated && (
           <button className="download-btn" onClick={handleDownload} title="Download PNG">
             &#8681; PNG
