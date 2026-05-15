@@ -12,11 +12,12 @@ ConversationEngine — 对话引擎。
 """
 
 import json
+import os
 import re
 import time
 import logging
 
-from anthropic import Anthropic
+from openai import AsyncOpenAI
 
 from models.schema import (
     ConversationTurn, SkillInvocation, Stage,
@@ -103,8 +104,10 @@ class ConversationEngine:
         self.context_bus = context_bus
         self.canvas_manager = canvas_manager
 
-        self.client = Anthropic(api_key=llm_config.get("api_key"))
-        self.model = llm_config.get("model", "claude-sonnet-4-5-20250514")
+        api_key = llm_config.get("api_key") or os.getenv("DEEPSEEK_API_KEY", "")
+        base_url = llm_config.get("api_base", "https://api.deepseek.com")
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self.model = llm_config.get("model", "deepseek-chat")
         self._stage = Stage.EXPLORE
 
     @property
@@ -178,9 +181,9 @@ class ConversationEngine:
             ],
             "canvas": self.canvas_manager.export_json(),
             "canvas_diff": {
-                "added": len(diff.added),
-                "modified": len(diff.modified),
-                "invalidated": len(diff.invalidated),
+                "added": len(diff.added_nodes),
+                "modified": len(diff.modified_nodes),
+                "invalidated": len(diff.invalidated_node_ids),
             },
             "latency_ms": round(latency_ms),
             "turn_id": user_turn.turn_id,
@@ -202,7 +205,6 @@ class ConversationEngine:
         conversation_context = ""
         for t in self.context_bus.recent_turns(5):
             prefix = "用户" if t.speaker == "user" else "教练"
-            # 截断单轮内容避免超长回复堆积 token
             text = t.text[:800] if len(t.text) > 800 else t.text
             conversation_context += f"{prefix}: {text}\n\n"
 
@@ -226,28 +228,39 @@ class ConversationEngine:
 
 请按照系统提示词的格式输出你的回复。"""
 
-        response = self.client.messages.create(
+        response = await self.client.chat.completions.create(
             model=self.model,
             max_tokens=4096,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0.7,
         )
-        return response.content[0].text
+        return response.choices[0].message.content
 
     def _parse_response(self, text: str) -> dict:
+        # 尝试从 ```json ``` 块中提取
         match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group(1))
             except json.JSONDecodeError as e:
-                log.warning(f"JSON parse error: {e}")
+                log.warning(f"JSON parse error in code block: {e}")
 
+        # 尝试整段 JSON
         try:
             return json.loads(text)
         except json.JSONDecodeError:
             pass
 
-        return {"reply": text, "canvas_updates": {}}
+        # 解析失败：去除 JSON 代码块，只留纯文本作为 reply
+        cleaned = re.sub(r"```json.*?```", "", text, flags=re.DOTALL).strip()
+        # 如果清理后为空或只有 JSON 残留，取前 500 字符作为安全降级
+        if not cleaned or cleaned.startswith("{"):
+            cleaned = text[:500]
+        log.warning(f"LLM response parse failed, using raw text ({len(cleaned)} chars)")
+        return {"reply": cleaned, "canvas_updates": {}}
 
     def advance_stage(self, stage: Stage):
         self._stage = stage

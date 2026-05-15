@@ -124,7 +124,7 @@ function useWebSocket(url) {
 // Column 1: Project Sidebar
 // ════════════════════════════════════════════════════════════════
 
-function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelete }) {
+function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelete, flex, onExpand, isExpanded, collapsed }) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
 
@@ -139,8 +139,10 @@ function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelet
   };
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-header">
+    <div className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('sidebar') : undefined}>
+      <div className="sidebar-header" onDoubleClick={() => onExpand('sidebar')}>
         <span className="sidebar-title">Projects</span>
       </div>
       <button className="sidebar-new-btn" onClick={onNew}>
@@ -187,7 +189,7 @@ function ProjectSidebar({ projects, activeId, onSelect, onNew, onRename, onDelet
 // Column 2: Chat Panel
 // ════════════════════════════════════════════════════════════════
 
-function ChatPanel({ messages, onSend, thinking }) {
+function ChatPanel({ messages, onSend, thinking, flex, onExpand, isExpanded, collapsed }) {
   const [input, setInput] = useState("");
   const endRef = useRef(null);
 
@@ -203,8 +205,10 @@ function ChatPanel({ messages, onSend, thinking }) {
   };
 
   return (
-    <div className="col col-chat">
-      <div className="col-header">Conversation / 对话</div>
+    <div className={`col col-chat${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('chat') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('chat')}>Conversation / 对话</div>
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="chat-empty">Start a conversation about the decision you're facing...</div>
@@ -212,14 +216,6 @@ function ChatPanel({ messages, onSend, thinking }) {
         {messages.map((msg, i) => (
           <div key={i} className={`chat-message ${msg.speaker}`}>
             <div className="chat-bubble">{msg.text}</div>
-            {msg.invocations && (
-              <div className="chat-meta">
-                {msg.invocations.map((inv, j) => (
-                  <span key={j} className="skill-tag">{inv.skill_id}</span>
-                ))}
-                {msg.latency_ms && <span className="latency">{msg.latency_ms}ms</span>}
-              </div>
-            )}
           </div>
         ))}
         {thinking && <div className="thinking-dot"><span /><span /><span /></div>}
@@ -245,7 +241,7 @@ function ChatPanel({ messages, onSend, thinking }) {
 // Column 3: 3D Force Graph
 // ════════════════════════════════════════════════════════════════
 
-function Graph3DPanel({ graphData }) {
+function Graph3DPanel({ graphData, flex, onExpand, isExpanded, collapsed }) {
   const containerRef = useRef(null);
   const graphRef = useRef(null);
 
@@ -314,8 +310,10 @@ function Graph3DPanel({ graphData }) {
   const linkCount = graphData?.links?.length || 0;
 
   return (
-    <div className="col col-graph">
-      <div className="col-header">
+    <div className={`col col-graph${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('graph') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('graph')}>
         Node Graph / 节点图
         <span className="col-header-badge">{nodeCount} nodes / {linkCount} edges</span>
       </div>
@@ -346,7 +344,7 @@ function Graph3DPanel({ graphData }) {
 // Column 4: Summary / Analysis Panel
 // ════════════════════════════════════════════════════════════════
 
-function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confidence, judgment }) {
+function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confidence, judgment, flex, onExpand, isExpanded, collapsed }) {
   const nodes = graphData?.nodes || [];
   const links = graphData?.links || [];
 
@@ -367,8 +365,10 @@ function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confiden
     .sort((a, b) => a.confidence - b.confidence);
 
   return (
-    <div className="col col-summary">
-      <div className="col-header">Analysis / 分析总结</div>
+    <div className={`col col-summary${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('summary') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('summary')}>Analysis / 分析总结</div>
       <div className="summary-scroll">
         {/* Stage & Confidence */}
         <div className="summary-card">
@@ -474,7 +474,10 @@ function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confiden
 function drawStrategyHouse(canvas, nodes) {
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
-  const W = 560, H = 900;
+  // Responsive width: use container width up to 600px
+  const containerW = canvas.parentElement ? canvas.parentElement.clientWidth - 24 : 560;
+  const W = Math.min(Math.max(containerW, 320), 600);
+  const H = 1200;
   canvas.width = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width = W + "px";
@@ -669,15 +672,14 @@ function drawStrategyHouse(canvas, nodes) {
 
   // Resize canvas to actual content height
   const finalH = y + 32;
-  if (finalH < H) {
-    const imgData = ctx.getImageData(0, 0, W * dpr, finalH * dpr);
-    canvas.height = finalH * dpr;
-    canvas.style.height = finalH + "px";
-    ctx.putImageData(imgData, 0, 0);
-  }
+  const croppedH = Math.min(finalH, H);
+  const imgData = ctx.getImageData(0, 0, W * dpr, croppedH * dpr);
+  canvas.height = croppedH * dpr;
+  canvas.style.height = croppedH + "px";
+  ctx.putImageData(imgData, 0, 0);
 }
 
-function StrategyHousePanel({ graphData }) {
+function StrategyHousePanel({ graphData, flex, onExpand, isExpanded, collapsed }) {
   const canvasRef = useRef(null);
   const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -703,8 +705,10 @@ function StrategyHousePanel({ graphData }) {
   };
 
   return (
-    <div className="col col-house">
-      <div className="col-header">
+    <div className={`col col-house${collapsed ? ' col-collapsed' : ''}`}
+      style={{ flex: isExpanded ? `0 0 ${flex}%` : flex }}
+      onClick={collapsed ? () => onExpand('house') : undefined}>
+      <div className="col-header" onDoubleClick={() => onExpand('house')}>
         Strategy House / 战略屋
         {generated && (
           <button className="download-btn" onClick={handleDownload} title="Download PNG">
@@ -778,8 +782,19 @@ function App() {
   });
   const [thinking, setThinking] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
+  const [expandedCol, setExpandedCol] = useState(null); // null | 'graph' | 'summary' | 'house'
 
   const project = projects.find(p => p.id === activeId) || projects[0];
+
+  // Column flex ratios: [sidebar, chat, graph, summary, house]
+  const RATIOS = {
+    null:      [2, 8, 3, 1, 1],  // default: chat focus
+    sidebar:   [8, 2, 3, 1, 1],  // sidebar expanded
+    graph:     [1, 2, 8, 3, 1],  // graph expanded
+    summary:   [1, 1, 2, 8, 3],  // summary expanded
+    house:     [1, 1, 2, 3, 8],  // house expanded
+  };
+  const flexes = RATIOS[expandedCol] || RATIOS[null];
 
   const { connected, send, on } = useWebSocket(`ws://${location.host}/ws`);
 
@@ -883,10 +898,20 @@ function App() {
     });
   };
 
+  const handleExpand = (col) => {
+    setExpandedCol(prev => prev === col ? null : col);
+  };
+
+  const isExpanded = expandedCol !== null;
+  const total = flexes.reduce((a, b) => a + b, 0);
+  const [sf, cf, gf, sumf, hf] = flexes.map(f => (f / total * 100).toFixed(1));
+  // Collapsed = tab mode: column whose ratio part <= 2 (out of 15) → ~7-13% flex
+  const collapsed = [sf, cf, gf, sumf, hf].map(f => parseFloat(f) < 15);
+
   return (
     <div className="app">
       <div className="app-header">
-        <h1>Strategic Canvas</h1>
+        <h1 onClick={() => setExpandedCol(null)} style={{cursor:'pointer'}}>Strategic Canvas</h1>
         <div className="header-right">
           <span className="node-count">{project.graphData?.nodes?.length || 0} nodes</span>
         </div>
@@ -899,13 +924,15 @@ function App() {
           onNew={handleNewProject}
           onRename={handleRenameProject}
           onDelete={handleDeleteProject}
+          flex={sf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[0]}
         />
         <ChatPanel
           messages={project.messages}
           onSend={handleSend}
           thinking={thinking}
+          flex={cf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[1]}
         />
-        <Graph3DPanel graphData={project.graphData} />
+        <Graph3DPanel graphData={project.graphData} flex={gf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[2]} />
         <SummaryPanel
           graphData={project.graphData}
           goldenPhrases={project.goldenPhrases}
@@ -913,8 +940,9 @@ function App() {
           stage={project.stage || "explore"}
           confidence={project.confidence || 0}
           judgment={project.judgment || ""}
+          flex={sumf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[3]}
         />
-        <StrategyHousePanel graphData={project.graphData} />
+        <StrategyHousePanel graphData={project.graphData} flex={hf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[4]} />
       </div>
       <StatusBar
         stage={project.stage || "explore"}

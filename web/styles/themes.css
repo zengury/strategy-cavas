@@ -142,13 +142,14 @@ html, body, #root {
   min-height: 0;
 }
 
-/* Shared column styles */
+/* Shared column styles — with smooth resize transition */
 .col {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--border);
   background: var(--bg-secondary);
+  transition: flex 0.35s ease;
 }
 
 .col:last-child { border-right: none; }
@@ -167,6 +168,8 @@ html, body, #root {
   align-items: center;
   justify-content: space-between;
   min-height: 34px;
+  cursor: pointer;
+  user-select: none;
 }
 
 .col-header-badge {
@@ -176,27 +179,96 @@ html, body, #root {
   font-family: var(--font-mono);
 }
 
-/* Column widths */
-.col-chat      { flex: 0 0 22%; min-width: 260px; }
-.col-graph     { flex: 0 0 28%; min-width: 300px; background: #0a0a0f; }
-.col-nodes     { flex: 0 0 22%; min-width: 220px; }
-.col-house     { flex: 0 0 28%; min-width: 260px; }
+/* Column widths — controlled by inline flex from JS */
+.col-chat      { min-width: 36px; }
+.col-graph     { min-width: 36px; background: #0a0a0f; }
+.col-nodes     { min-width: 36px; }
+.col-house     { min-width: 36px; }
 
 /* Keep old class name for backwards compat */
-.col-summary   { flex: 0 0 22%; min-width: 220px; }
+.col-summary   { min-width: 36px; }
+
+/* ── Collapsed tab mode ─────────────────────────────────────── */
+
+.col-collapsed {
+  min-width: 36px !important;
+  max-width: 40px;
+  cursor: pointer;
+}
+
+.col-collapsed .col-header {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 10px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+  gap: 0;
+  min-height: 0;
+}
+
+.col-collapsed .col-header:hover {
+  background: var(--bg-secondary);
+  border-left-color: var(--accent);
+}
+
+.col-collapsed .col-header-badge {
+  display: none;
+}
+
+/* Hide all content except header when collapsed */
+.col-collapsed > :not(.col-header) {
+  display: none !important;
+}
+
+/* Sidebar collapsed */
+.sidebar-collapsed {
+  min-width: 36px !important;
+  max-width: 40px;
+}
+
+.sidebar-collapsed .sidebar-header {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 10px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sidebar-collapsed .sidebar-header:hover {
+  border-left-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.sidebar-collapsed > :not(.sidebar-header) {
+  display: none !important;
+}
 
 /* ════════════════════════════════════════════════════════════════
    Column 1: Sidebar
    ════════════════════════════════════════════════════════════════ */
 
 .sidebar {
-  width: var(--sidebar-w);
+  min-width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
   background: var(--bg-primary);
   overflow: hidden;
+  transition: flex 0.35s ease;
 }
 
 .sidebar-header {
@@ -205,6 +277,8 @@ html, body, #root {
   min-height: 34px;
   display: flex;
   align-items: center;
+  cursor: pointer;
+  user-select: none;
 }
 
 .sidebar-title {

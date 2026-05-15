@@ -1,5 +1,5 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
 websockets>=12.0
-anthropic>=0.50
+openai>=1.50
 pyyaml>=6.0

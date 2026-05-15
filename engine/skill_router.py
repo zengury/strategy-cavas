@@ -13,12 +13,11 @@ SkillRouter — 技能路由器。
 """
 
 import json
+import os
 import re
-import time
 import logging
-from typing import Optional
 
-from anthropic import Anthropic
+from openai import AsyncOpenAI
 
 from models.schema import (
     SkillInvocation, CanvasGraph, ConversationTurn,
@@ -46,8 +45,10 @@ class SkillRouter:
 
     def __init__(self, registry: SkillRegistry, llm_config: dict):
         self.registry = registry
-        self.client = Anthropic(api_key=llm_config.get("api_key"))
-        self.model = llm_config.get("router_model", "claude-sonnet-4-5-20250514")
+        api_key = llm_config.get("api_key") or os.getenv("DEEPSEEK_API_KEY", "")
+        base_url = llm_config.get("api_base", "https://api.deepseek.com")
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self.model = llm_config.get("router_model", "deepseek-chat")
         self._fallback_skill = "general_advisor"
 
     async def route(
@@ -136,7 +137,7 @@ class SkillRouter:
         if not catalog:
             return []
 
-        # 精简画布摘要：只列出已有节点类型和数量，避免发送完整内容
+        # 精简画布摘要：只列出已有节点类型和数量
         type_counts = {}
         for n in canvas.active_nodes():
             t = n.node_type.value
@@ -155,12 +156,13 @@ class SkillRouter:
 返回 JSON: [{{"skill_id": "xxx", "reason": "..."}}]"""
 
         try:
-            response = self.client.messages.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
             )
-            text = response.content[0].text
+            text = response.choices[0].message.content
 
             match = re.search(r"\[.*\]", text, re.DOTALL)
             if match:
