@@ -271,7 +271,6 @@ function Graph3DPanel({ graphData, flex, onExpand, isExpanded, collapsed, medium
       .linkDirectionalParticleColor(() => "rgba(100,180,255,0.6)")
       .linkLabel(l => l.label || "")
       .onNodeClick(node => {
-        // Focus on node
         const distance = 120;
         const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
         graph.cameraPosition(
@@ -344,28 +343,50 @@ function Graph3DPanel({ graphData, flex, onExpand, isExpanded, collapsed, medium
 }
 
 // ════════════════════════════════════════════════════════════════
-// Column 4: Summary / Analysis Panel
+// Column 4: Node Selector + Analysis Panel
 // ════════════════════════════════════════════════════════════════
 
-function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confidence, judgment, flex, onExpand, isExpanded, collapsed, medium }) {
+function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confidence, judgment, flex, onExpand, isExpanded, collapsed, medium, selectedNodes, onToggleNode, onSelectAll, onClearAll }) {
   const nodes = graphData?.nodes || [];
   const links = graphData?.links || [];
+  const selSet = useMemo(() => new Set(selectedNodes || []), [selectedNodes]);
+  const selectedCount = selSet.size;
 
-  // Node stats by type
-  const typeStats = useMemo(() => {
-    const stats = {};
+  // Selected nodes data
+  const selNodes = useMemo(() => nodes.filter(n => selSet.has(n.id)), [nodes, selSet]);
+
+  // Group all nodes by type in logical order
+  const TYPE_ORDER = ["goal","position","tension","option","action","resource","assumption","risk","signal","evidence","mechanism","stakeholder","constraint","pattern"];
+  const groupedNodes = useMemo(() => {
+    const groups = {};
     nodes.forEach(n => {
-      stats[n.node_type] = (stats[n.node_type] || 0) + 1;
+      const t = n.node_type || 'evidence';
+      if (!groups[t]) groups[t] = [];
+      groups[t].push(n);
     });
-    return Object.entries(stats).sort((a, b) => b[1] - a[1]);
+    return Object.fromEntries(TYPE_ORDER.filter(t => groups[t]).map(t => [t, groups[t]]));
   }, [nodes]);
 
-  // Key tensions
-  const tensions = nodes.filter(n => n.node_type === "tension" || n.node_type === "risk");
-  // Key assumptions (low confidence)
-  const weakAssumptions = nodes
-    .filter(n => n.node_type === "assumption" && n.confidence < 0.6)
-    .sort((a, b) => a.confidence - b.confidence);
+  // Auto-detect pattern from selected nodes
+  const pattern = useMemo(() => {
+    if (selectedCount === 0) return null;
+    const types = selNodes.map(n => n.node_type);
+    const has = (t) => types.includes(t);
+    if (has('tension') && has('option')) return 'decision_fork';
+    if (has('assumption')) return 'assumption_stack';
+    if (has('risk') || has('signal')) return 'risk_radar';
+    if (has('resource')) return 'resource_map';
+    if (has('action')) return 'action_roadmap';
+    return 'full_synthesis';
+  }, [selNodes, selectedCount]);
+
+  const PATTERN_LABELS = { decision_fork: 'Decision Fork', assumption_stack: 'Assumption Stack', risk_radar: 'Risk Radar', resource_map: 'Resource Map', action_roadmap: 'Action Roadmap', full_synthesis: 'Full Synthesis' };
+
+  // Get edges that involve selected nodes
+  const selEdges = useMemo(() => {
+    const ids = new Set(selectedNodes || []);
+    return links.filter(l => ids.has(l.source) && ids.has(l.target));
+  }, [links, selectedNodes]);
 
   return (
     <div className={`col col-summary${collapsed ? ' col-collapsed' : ''}${medium ? ' col-medium' : ''}`}
@@ -379,16 +400,14 @@ function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confiden
           <div className="summary-card-title">Stage / 阶段</div>
           <div className="stage-badge">{STAGE_LABELS[stage] || stage}</div>
           <div className="confidence-bar-wrapper">
-            <div className="confidence-label">
-              Confidence: {Math.round(confidence * 100)}%
-            </div>
+            <div className="confidence-label">Confidence: {Math.round(confidence * 100)}%</div>
             <div className="confidence-bar">
               <div className="confidence-fill" style={{ width: `${confidence * 100}%` }} />
             </div>
           </div>
         </div>
 
-        {/* One-line judgment */}
+        {/* Judgment */}
         {judgment && (
           <div className="summary-card">
             <div className="summary-card-title">Judgment / 判断</div>
@@ -396,50 +415,54 @@ function SummaryPanel({ graphData, goldenPhrases, namedConcepts, stage, confiden
           </div>
         )}
 
-        {/* Node statistics */}
-        <div className="summary-card">
-          <div className="summary-card-title">
-            Nodes / 节点 <span className="count-badge">{nodes.length}</span>
-          </div>
-          <div className="type-stats">
-            {typeStats.map(([type, count]) => (
-              <div key={type} className="type-stat-row">
-                <span className="type-dot" style={{ background: NODE_COLORS[type] }} />
-                <span className="type-label">{NODE_TYPE_LABELS[type] || type}</span>
-                <span className="type-count">{count}</span>
-                <div className="type-bar">
-                  <div style={{ width: `${(count / nodes.length) * 100}%`, background: NODE_COLORS[type] }} />
+        {/* Node Selector — multi-select with checkboxes */}
+        {nodes.length > 0 && (
+          <div className="summary-card">
+            <div className="summary-card-title" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span>Select Nodes / 选择节点 <span className="count-badge">{selectedCount}/{nodes.length}</span></span>
+              <span>
+                <button className="ns-all-btn" onClick={onSelectAll}>All</button>
+                <button className="ns-all-btn" onClick={onClearAll} style={{marginLeft:4}}>Clear</button>
+              </span>
+            </div>
+            {Object.entries(groupedNodes).map(([type, items]) => (
+              <div key={type} className="ns-group">
+                <div className="ns-group-header" onClick={(e) => e.stopPropagation()}>
+                  <span className="ns-group-dot" style={{ background: NODE_COLORS[type] || '#999' }} />
+                  <span className="ns-group-label-en">{type.toUpperCase()}</span>
+                  <span className="ns-group-label-zh">{NODE_TYPE_LABELS[type] || ''}</span>
+                  <span className="ns-group-count">{items.length}</span>
                 </div>
-              </div>
-            ))}
-          </div>
-          <div className="edge-stat">{links.length} relationships / 关系</div>
-        </div>
-
-        {/* Key Tensions & Risks */}
-        {tensions.length > 0 && (
-          <div className="summary-card warning-card">
-            <div className="summary-card-title">Key Tensions & Risks / 关键张力</div>
-            {tensions.map(t => (
-              <div key={t.id} className="tension-item">
-                <span className="tension-type">{t.node_type}</span>
-                <span className="tension-label">{t.label}</span>
-                <span className="tension-conf">{Math.round(t.confidence * 100)}%</span>
+                {items.map(n => {
+                  const isSel = selSet.has(n.id);
+                  return (
+                    <div key={n.id} className={`ns-item ${isSel ? 'selected' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); onToggleNode && onToggleNode(n.id); }}>
+                      <span className="ns-check">{isSel ? '✓' : ''}</span>
+                      <span className="ns-item-dot" style={{ background: NODE_COLORS[type] || '#999' }} />
+                      <span className="ns-item-label" title={n.content || n.label}>{n.label}</span>
+                      <span className="ns-item-conf">{Math.round((n.confidence || 0.8) * 100)}%</span>
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
         )}
 
-        {/* Weak Assumptions */}
-        {weakAssumptions.length > 0 && (
-          <div className="summary-card danger-card">
-            <div className="summary-card-title">Unverified Assumptions / 待验证假设</div>
-            {weakAssumptions.map(a => (
-              <div key={a.id} className="assumption-item">
-                <div className="assumption-label">{a.label}</div>
-                <div className="assumption-conf">
-                  confidence {Math.round(a.confidence * 100)}%
-                </div>
+        {/* Selected Nodes Analysis */}
+        {selectedCount > 0 && (
+          <div className="summary-card">
+            <div className="summary-card-title">
+              Selected Analysis / 选中分析
+              <span className="count-badge">{PATTERN_LABELS[pattern] || pattern}</span>
+            </div>
+            <div className="edge-stat">{selNodes.length} nodes, {selEdges.length} relationships</div>
+            {selNodes.map(n => (
+              <div key={n.id} className="ns-item" style={{cursor:'default',borderColor:'transparent'}}>
+                <span className="ns-item-dot" style={{ background: NODE_COLORS[n.node_type] || '#999' }} />
+                <span className="ns-item-label" title={n.content}>{n.label}</span>
+                <span className="ns-item-conf">{Math.round((n.confidence || 0.8) * 100)}%</span>
               </div>
             ))}
           </div>
@@ -787,7 +810,17 @@ function App() {
   });
   const [thinking, setThinking] = useState(false);
   const [demoLoaded, setDemoLoaded] = useState(false);
-  const [expandedCol, setExpandedCol] = useState(null); // null | 'graph' | 'summary' | 'house'
+  const [expandedCol, setExpandedCol] = useState(null);
+  const [selectedNodes, setSelectedNodes] = useState([]);
+
+  const handleToggleNode = useCallback((id) => {
+    setSelectedNodes(prev => prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id]);
+  }, []);
+  const handleSelectAll = useCallback(() => {
+    const allIds = (project.graphData?.nodes || []).map(n => n.id);
+    setSelectedNodes(allIds);
+  }, [project.graphData]);
+  const handleClearAll = useCallback(() => setSelectedNodes([]), []);
 
   const project = projects.find(p => p.id === activeId) || projects[0];
 
@@ -952,6 +985,10 @@ function App() {
           confidence={project.confidence || 0}
           judgment={project.judgment || ""}
           flex={sumf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[3]} medium={medium[3]}
+          selectedNodes={selectedNodes}
+          onToggleNode={handleToggleNode}
+          onSelectAll={handleSelectAll}
+          onClearAll={handleClearAll}
         />
         <StrategyHousePanel graphData={project.graphData} flex={hf} onExpand={handleExpand} isExpanded={isExpanded} collapsed={collapsed[4]} medium={medium[4]} />
       </div>
