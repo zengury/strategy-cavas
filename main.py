@@ -18,11 +18,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
-from engine.skill_registry import SkillRegistry
-from engine.skill_router import SkillRouter
-from engine.context_bus import ContextBus
-from engine.canvas_state import CanvasStateManager
-from engine.conversation import ConversationEngine
+from engine import (
+    SkillRegistry, SkillRouter, ContextBus,
+    CanvasStateManager, ConversationEngine,
+)
+from engine.config import get_config
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,18 +34,15 @@ log = logging.getLogger("main")
 app = FastAPI(title="Strategic Canvas Live", version="0.1.0")
 
 
-def load_config(path: str = "config/app.yaml") -> dict:
-    import yaml
-    with open(path) as f:
-        return yaml.safe_load(f)
-
-
-config = load_config()
-registry = SkillRegistry(config.get("skills_dir", "skills"))
-router = SkillRouter(registry, config.get("llm", {}))
-context_bus = ContextBus(max_turns=config.get("max_turns", 50))
-canvas_manager = CanvasStateManager(config.get("store_path", "store"))
-engine = ConversationEngine(registry, router, context_bus, canvas_manager, config.get("llm", {}))
+config = get_config()
+registry = SkillRegistry(config.skills_dir)
+router = SkillRouter(registry, {"api_key": config.llm_api_key, "api_base": config.llm_api_base, "router_model": config.llm_router_model})
+context_bus = ContextBus(max_turns=config.max_turns)
+canvas_manager = CanvasStateManager(config.store_path)
+engine = ConversationEngine(
+    registry, router, context_bus, canvas_manager,
+    {"api_key": config.llm_api_key, "api_base": config.llm_api_base, "model": config.llm_model},
+)
 
 # ── 静态文件 ──────────────────────────────────────────────────
 

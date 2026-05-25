@@ -1,5 +1,5 @@
 """
-ConversationEngine — 对话引擎。
+ConversationEngine v3 — 对话编排引擎。
 
 职责（PRD FR-01~04, §6.2 对话协议）：
   - 多轮自然语言对话
@@ -8,16 +8,13 @@ ConversationEngine — 对话引擎。
   - 阶段推进（explore → converge → stress_test → commit → review）
   - 调用选中 skill 定义注入上下文，生成教练回复 + 画布增量
 
-技能强制原则：每轮助手输出必须由 skill 调用支撑。
+v2: SYSTEM_PROMPT 从 config/prompts.yaml 加载，参数从 config 模块读取。
+    技能强制原则不变：每轮助手输出必须由 skill 调用支撑。
 """
 
 import json
-import os
-import re
 import time
 import logging
-
-from openai import AsyncOpenAI
 
 from models.schema import (
     ConversationTurn, SkillInvocation, Stage,
@@ -26,67 +23,11 @@ from engine.skill_registry import SkillRegistry
 from engine.skill_router import SkillRouter
 from engine.context_bus import ContextBus
 from engine.canvas_state import CanvasStateManager
+from engine.config import get_config
+from engine.llm_client import LLMClient
+from engine.response_parser import parse_json_response
 
 log = logging.getLogger("conversation")
-
-SYSTEM_PROMPT = """你是 Strategic Canvas 的战略教练——一个像经验丰富的朋友、并肩散步时帮对方理清重大选择的伙伴。
-
-## 你的身份
-- 你不区分"商业决策"还是"生活决策"——所有重大选择都用同一套战略逻辑
-- 你的语气温暖但精准，像一个值得信赖的老朋友而不是面试官
-- 你永远先接住对方的情绪和担忧，再展开分析
-
-## 每轮回复协议（严格遵守）
-每轮回复必须包含以下 4 步，但表达要自然流畅，不要显式标号：
-
-1. **接住**：用自己的话复述用户真正担心的点（证明你听懂了）
-2. **点亮**：只提 1 个关键启发问题（不要连续追问）
-3. **试探**：给出条件化判断（"如果 X 成立，那么 Y 可能是更好的方向，但代价是 Z"）
-4. **落脚**：给一个最小验证动作（用户可以立即去做的具体小步骤）
-
-## 约束
-- 每轮最多 1 个主问题，避免审讯感
-- 每 2-3 轮必须产出临时结论
-- 建议必须包含：成立条件、代价、失败信号
-- 不要说"这是一个好问题"之类的空话
-- 不要列清单，用自然段落表达
-
-## 技能驱动
-你的分析由激活的技能（skills）驱动。每轮回复中，你必须运用指定技能的框架进行思考。
-技能定义会以上下文形式提供给你。
-
-## 画布更新
-每轮回复同时输出画布增量更新（JSON），映射到 7 个区块：
-north_star / context / options / tradeoffs / assumptions / signals / next_moves
-
-## 输出格式
-你的回复必须是以下 JSON，包裹在 ```json ``` 中：
-
-```json
-{
-  "reply": "你对用户说的自然语言回复（遵循 4 步协议）",
-  "stage": "当前决策阶段 (explore/converge/stress_test/commit/review)",
-  "one_line_judgment": "一句话当前判断",
-  "confidence": 0.65,
-  "skills_applied": ["skill_id_1", "skill_id_2"],
-  "canvas_updates": {
-    "north_star": [{"content": "...", "confidence": 0.9, "evidence": "用户第3轮提到..."}],
-    "options": [],
-    "context": [],
-    "tradeoffs": [],
-    "assumptions": [],
-    "signals": [],
-    "next_moves": []
-  }
-}
-```
-
-注意：
-- canvas_updates 中只包含本轮有变化的区块（无变化的写空数组）
-- 每个节点必须有 evidence 字段说明来源
-- 如果要失效某个已有节点：{"action": "invalidate", "node_id": "xxx"}
-- 如果要修改某个已有节点：{"action": "modify", "node_id": "xxx", "content": "新内容"}
-"""
 
 
 class ConversationEngine:
@@ -98,15 +39,17 @@ class ConversationEngine:
         context_bus: ContextBus,
         canvas_manager: CanvasStateManager,
         llm_config: dict,
+        config_dir: str = "config",
     ):
         self.registry = registry
         self.router = router
         self.context_bus = context_bus
         self.canvas_manager = canvas_manager
+        self._cfg = get_config(config_dir)
 
-        api_key = llm_config.get("api_key") or os.getenv("DEEPSEEK_API_KEY", "")
+        api_key = llm_config.get("api_key")
         base_url = llm_config.get("api_base", "https://api.deepseek.com")
-        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self.llm = LLMClient(api_key=api_key, api_base=base_url)
         self.model = llm_config.get("model", "deepseek-chat")
         self._stage = Stage.EXPLORE
 
@@ -131,14 +74,14 @@ class ConversationEngine:
             user_turn, self.canvas_manager.graph, context_snapshot,
         )
 
-        # 3. 加载技能定义（截断到 1500 字符，避免大量 token 消耗）
-        MAX_SKILL_CHARS = 1500
+        # 3. 加载技能定义（按配置截断，避免大量 token 消耗）
+        max_chars = self._cfg.max_skill_chars
         skill_definitions = []
         for inv in invocations:
             defn = self.registry.get_definition(inv.skill_id)
             if defn:
-                truncated = defn[:MAX_SKILL_CHARS]
-                if len(defn) > MAX_SKILL_CHARS:
+                truncated = defn[:max_chars]
+                if len(defn) > max_chars:
                     truncated += "\n...(已截断)"
                 skill_definitions.append(f"### Skill: {inv.skill_id}\n{truncated}")
             self.registry.record_hit(inv.skill_id, success=True)
@@ -148,7 +91,7 @@ class ConversationEngine:
                                            skill_definitions, invocations)
 
         # 5. 解析回复
-        parsed = self._parse_response(llm_result)
+        parsed = parse_json_response(llm_result)
 
         # 6. 更新阶段
         new_stage = parsed.get("stage", self._stage.value)
@@ -194,16 +137,18 @@ class ConversationEngine:
         skill_definitions: list[str], invocations: list[SkillInvocation],
     ) -> str:
         skills_block = "\n\n---\n\n".join(skill_definitions) if skill_definitions else "无特定技能激活"
+
         # 精简画布：只发类型计数 + 最重要的几个节点标签
         summary = self.canvas_manager.graph.to_summary()
+        max_labels = self._cfg.max_canvas_labels_per_type
         brief = {}
         for ntype, nodes in summary.items():
-            labels = [n["label"] for n in nodes[:5]]  # 每类型最多 5 个标签
+            labels = [n["label"] for n in nodes[:max_labels]]
             brief[ntype] = {"count": len(nodes), "labels": labels}
         canvas_json = json.dumps(brief, ensure_ascii=False, indent=1)
 
         conversation_context = ""
-        for t in self.context_bus.recent_turns(5):
+        for t in self.context_bus.recent_turns(self._cfg.max_turns_context):
             prefix = "用户" if t.speaker == "user" else "教练"
             text = t.text[:800] if len(t.text) > 800 else t.text
             conversation_context += f"{prefix}: {text}\n\n"
@@ -228,39 +173,11 @@ class ConversationEngine:
 
 请按照系统提示词的格式输出你的回复。"""
 
-        response = await self.client.chat.completions.create(
+        return await self.llm.chat(
             model=self.model,
-            max_tokens=4096,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.7,
+            system_prompt=self._cfg.system_prompt,
+            user_message=user_message,
         )
-        return response.choices[0].message.content
-
-    def _parse_response(self, text: str) -> dict:
-        # 尝试从 ```json ``` 块中提取
-        match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group(1))
-            except json.JSONDecodeError as e:
-                log.warning(f"JSON parse error in code block: {e}")
-
-        # 尝试整段 JSON
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            pass
-
-        # 解析失败：去除 JSON 代码块，只留纯文本作为 reply
-        cleaned = re.sub(r"```json.*?```", "", text, flags=re.DOTALL).strip()
-        # 如果清理后为空或只有 JSON 残留，取前 500 字符作为安全降级
-        if not cleaned or cleaned.startswith("{"):
-            cleaned = text[:500]
-        log.warning(f"LLM response parse failed, using raw text ({len(cleaned)} chars)")
-        return {"reply": cleaned, "canvas_updates": {}}
 
     def advance_stage(self, stage: Stage):
         self._stage = stage

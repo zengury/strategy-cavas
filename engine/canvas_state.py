@@ -19,20 +19,18 @@ from models.schema import (
     CanvasGraph, GraphNode, GraphEdge, GraphDiff,
     NodeType, EdgeType, NODE_SPATIAL_BIAS,
 )
+from engine.config import get_config
 
 log = logging.getLogger("canvas_state")
-
-# 3D 空间范围
-SPACE_SCALE = 200  # 节点分布范围 [-SCALE, SCALE]
-JITTER = 40        # 同类型节点的随机偏移量
 
 
 class CanvasStateManager:
 
-    def __init__(self, store_path: str = "store"):
+    def __init__(self, store_path: str = "store", config_dir: str = "config"):
         self.store_dir = Path(store_path) / "cases"
         self.store_dir.mkdir(parents=True, exist_ok=True)
         self._graph = CanvasGraph()
+        self._cfg = get_config(config_dir)
 
     @property
     def graph(self) -> CanvasGraph:
@@ -102,9 +100,11 @@ class CanvasStateManager:
     def _assign_position(self, node: GraphNode):
         """基于节点类型的语义偏置分配 3D 坐标。"""
         bias = NODE_SPATIAL_BIAS.get(node.node_type, (0, 0, 0))
-        node.x = bias[0] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
-        node.y = bias[1] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
-        node.z = bias[2] * SPACE_SCALE + random.uniform(-JITTER, JITTER)
+        scale = self._cfg.space_scale
+        jitter = self._cfg.jitter
+        node.x = bias[0] * scale + random.uniform(-jitter, jitter)
+        node.y = bias[1] * scale + random.uniform(-jitter, jitter)
+        node.z = bias[2] * scale + random.uniform(-jitter, jitter)
 
     def parse_llm_canvas_output(self, parsed: dict, turn_id: str) -> GraphDiff:
         """从 LLM JSON 输出解析画布增量。"""

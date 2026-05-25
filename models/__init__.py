@@ -1,14 +1,12 @@
 """
-schema.py — 向后兼容 re-export
+models — Strategic Canvas 数据模型包
 
-v2 重构后，所有定义已拆分到：
-  models.enums       — Stage, SkillStatus, NodeType, EdgeType
-  models.domain      — 所有 dataclass
-  models.graph_config — 可视化常量
-  models.compat      — v1 别名
-
-此文件保留以支持现有 `from models.schema import ...` 的导入。
-新代码应使用 `from models import ...` 直接从包导入。
+从单个 schema.py 重构为模块化结构：
+  enums.py      — Stage, SkillStatus, NodeType, EdgeType
+  domain.py     — 所有 dataclass 领域对象
+  graph_config.py — 可视化常量
+  compat.py     — v1 向后兼容别名
+  schema.py     — 保留为兼容性 re-export（逐步废弃）
 """
 
 from models.enums import Stage, SkillStatus, NodeType, EdgeType
@@ -33,11 +31,15 @@ from models.graph_config import (
 from models.compat import CanvasState
 
 __all__ = [
+    # Enums
     "Stage", "SkillStatus", "NodeType", "EdgeType",
+    # Domain objects
     "ConversationTurn", "SkillInvocation", "ContextObject",
     "GraphNode", "GraphEdge", "GraphDiff", "CanvasGraph",
     "DecisionCase", "SkillMeta",
+    # Config
     "NODE_SPATIAL_BIAS", "NODE_COLORS", "EDGE_COLORS",
     "CANVAS_ZONES", "NODE_TYPE_TO_ZONE",
+    # Compat
     "CanvasState",
 ]

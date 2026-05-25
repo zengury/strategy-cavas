@@ -1,0 +1,25 @@
+# 技能路由规则 — 从 skill_router.py 提取
+# 结构缺口 → 推荐技能
+
+gap_rules:
+  north_star: [goal_clarifier, north_star_setter]
+  context:    [context_mapper, constraint_scanner]
+  options:    [option_generator, lateral_thinker]
+  tradeoffs:  [tradeoff_analyzer, cost_benefit]
+  assumptions: [assumption_surfacer, hidden_belief_detector]
+  signals:    [signal_designer, pre_mortem]
+  next_moves: [experiment_designer, minimum_viable_test]
+
+stage_skills:
+  stress_test:
+    - [pre_mortem, "stage: stress testing phase"]
+    - [devils_advocate, "stage: need contrarian view"]
+  commit:
+    - [experiment_designer, "stage: designing commitment tests"]
+    - [decision_criteria, "stage: finalizing criteria"]
+  review:
+    - [retrospective, "stage: review and learn"]
+    - [cognitive_bias_check, "stage: bias audit"]
+
+max_skills_per_turn: 3
+fallback_skill: general_advisor

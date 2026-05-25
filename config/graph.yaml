@@ -1,0 +1,5 @@
+# 3D 图可视化参数
+
+space_scale: 200
+jitter: 40
+max_nodes: 500      # 节点上限，超过则淘汰低置信度节点
